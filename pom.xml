@@ -10,6 +10,7 @@
 
     <name>eorm-spring</name>
     <url>https://github.com/deng-hb/eorm-spring</url>
+    <description>A easy based on the Spring JdbcTemplate JDBC ORM</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
