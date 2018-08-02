@@ -37,9 +37,8 @@ public interface Eorm {
      *
      * @param domain
      * @param <T>
-     * @return int
      */
-    <T> boolean insert(T domain);
+    <T> void insert(T domain);
 
     /**
      * 修改一个对象
@@ -48,16 +47,15 @@ public interface Eorm {
      * @param <T>
      * @return int
      */
-    <T> int update(T domain);
+    <T> void update(T domain);
 
     /**
      * 删除一个对象
      *
      * @param domain
      * @param <T>
-     * @return int
      */
-    <T> int delete(T domain);
+    <T> void delete(T domain);
 
 
     /**
@@ -66,9 +64,8 @@ public interface Eorm {
      * @param clazz
      * @param ids
      * @param <T>
-     * @return int
      */
-    <T> int delete(Class<T> clazz, Object... ids);
+    <T> void delete(Class<T> clazz, Object... ids);
 
     /**
      * 查询一个对象

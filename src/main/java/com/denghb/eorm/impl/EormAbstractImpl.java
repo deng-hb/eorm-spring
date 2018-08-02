@@ -1,6 +1,7 @@
 package com.denghb.eorm.impl;
 
 import com.denghb.eorm.Eorm;
+import com.denghb.eorm.EormException;
 import com.denghb.eorm.utils.EormUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -65,7 +66,7 @@ public abstract class EormAbstractImpl implements Eorm {
         return list;
     }
 
-    public <T> int update(T domain) {
+    public <T> void update(T domain) {
 
         EormUtils.TableInfo table = EormUtils.getTableInfo(domain);
         List<Object> params = new ArrayList<Object>();
@@ -109,10 +110,13 @@ public abstract class EormAbstractImpl implements Eorm {
 
         String sql = sb.toString();
         int res = this.execute(sql, params.toArray());
-        return res;
+
+        if (1 != res) {
+            throw new EormException();
+        }
     }
 
-    public <T> int delete(T domain) {
+    public <T> void delete(T domain) {
         EormUtils.TableInfo table = EormUtils.getTableInfo(domain);
         List<Object> params = new ArrayList<Object>();
 
@@ -135,10 +139,13 @@ public abstract class EormAbstractImpl implements Eorm {
 
         String sql = sb.toString();
         int res = this.execute(sql, params.toArray());
-        return res;
+
+        if (1 != res) {
+            throw new EormException();
+        }
     }
 
-    public <T> int delete(Class<T> clazz, Object... ids) {
+    public <T> void delete(Class<T> clazz, Object... ids) {
 
         StringBuilder sb = new StringBuilder("delete from ");
         sb.append(EormUtils.getTableName(clazz));
@@ -156,7 +163,10 @@ public abstract class EormAbstractImpl implements Eorm {
 
         String sql = sb.toString();
         int res = this.execute(sql, ids);
-        return res;
+
+        if (1 != res) {
+            throw new EormException();
+        }
     }
 
     public <T> T selectOne(Class<T> clazz, String sql, Object... args) {

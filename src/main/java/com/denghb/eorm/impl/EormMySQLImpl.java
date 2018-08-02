@@ -1,6 +1,7 @@
 package com.denghb.eorm.impl;
 
 import com.denghb.eorm.Eorm;
+import com.denghb.eorm.EormException;
 import com.denghb.eorm.domain.Paging;
 import com.denghb.eorm.domain.PagingResult;
 import com.denghb.eorm.utils.EormUtils;
@@ -21,7 +22,7 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
         super(jdbcTemplate);
     }
 
-    public <T> boolean insert(T domain) {
+    public <T> void insert(T domain) {
 
         EormUtils.TableInfo table = EormUtils.getTableInfo(domain);
 
@@ -57,10 +58,10 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
         sb.append(")");
 
         String sql = sb.toString();
-        boolean res = 1 == this.execute(sql, params.toArray());
+        int res = this.execute(sql, params.toArray());
 
-        if (!res) {
-            return res;
+        if (1 != res) {
+            throw new EormException();
         }
         // 获取自动生成的ID并填充
         List<Field> fields = table.getAllPrimaryKeyFields();
@@ -72,8 +73,6 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
                 ReflectUtils.setFieldValue(field, domain, value);
             }
         }
-
-        return res;
 
     }
 
