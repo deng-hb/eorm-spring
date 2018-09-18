@@ -146,17 +146,15 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
 
         Object[] objects = paging.getParams().toArray();
         // 不分页 start
-        long rows = paging.getRows();
-        if (0 != rows) {
-            // 先查总数
-            String totalSql = "select count(*) ";
-
-            String tempSql = sql.toString().toLowerCase();
-            totalSql += sql.substring(tempSql.indexOf("from"), sql.length());
-
-            // fix group by
-            if (0 < totalSql.indexOf(" group ")) {
-                totalSql = "select count(*) from (" + totalSql + ") temp";
+        long pageSize = paging.getPageSize();
+        if (0 != pageSize) {
+            // 总记录数
+            String totalSql = "";
+            if (paging.isFullTotal()) {
+                totalSql = "select count(*) from (" + sql + ") temp";
+            } else {
+                String tempSql = sql.toString().toLowerCase();
+                totalSql = "select count(*) " + sql.substring(tempSql.indexOf("from"), sql.length());
             }
 
             long total = this.selectOne(Long.class, totalSql, objects);
@@ -194,12 +192,12 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
             }
         }
 
-        if (0 != rows) {
+        if (0 != pageSize) {
             // 分页
             sql.append(" limit ");
             sql.append(paging.getStart());
             sql.append(",");
-            sql.append(rows);
+            sql.append(pageSize);
         }
 
         List<T> list = select(clazz, sql.toString(), objects);

@@ -25,7 +25,7 @@ public abstract class Paging implements Serializable {
     /**
      * 每页数量
      */
-    private long rows = 20;
+    private long pageSize = 20;
 
     /**
      * 总页数
@@ -40,7 +40,7 @@ public abstract class Paging implements Serializable {
     /**
      * 是否排序
      */
-    private boolean isSort = true;
+    private boolean sort = true;
 
     /**
      * 排序字段
@@ -58,6 +58,11 @@ public abstract class Paging implements Serializable {
     private boolean desc = true;
 
     /**
+     * 整条SQL查询总数
+     */
+    private boolean fullTotal = false;
+
+    /**
      * 参数列表
      */
     private List<Object> params = new ArrayList<Object>();
@@ -69,9 +74,9 @@ public abstract class Paging implements Serializable {
     public void setTotal(long total) {
         this.total = total;
 
-        if (0 != total && 0 != rows) {
-            totalPage = total / rows;
-            if (total % rows != 0) {
+        if (0 != total && 0 != pageSize) {
+            totalPage = total / pageSize;
+            if (total % pageSize != 0) {
                 totalPage++;
             }
         }
@@ -86,12 +91,12 @@ public abstract class Paging implements Serializable {
         this.page = page;
     }
 
-    public long getRows() {
-        return rows;
+    public long getPageSize() {
+        return pageSize;
     }
 
-    public void setRows(long rows) {
-        this.rows = rows;
+    public void setPageSize(long pageSize) {
+        this.pageSize = pageSize;
     }
 
     public long getTotalPage() {
@@ -129,11 +134,11 @@ public abstract class Paging implements Serializable {
     }
 
     public boolean isSort() {
-        return isSort;
+        return sort;
     }
 
-    public void setSort(boolean isSort) {
-        this.isSort = isSort;
+    public void setSort(boolean sort) {
+        this.sort = sort;
     }
 
     public int getSortIndex() {
@@ -145,17 +150,35 @@ public abstract class Paging implements Serializable {
     }
 
     public long getStart() {
-        return (page - 1) * rows;
+        return (page - 1) * pageSize;
     }
 
     public void setStart(long start) {
         this.start = start;
     }
 
-    @Override
-    public String toString() {
-        return "Paging [total=" + total + ", page=" + page + ", rows=" + rows + ", totalPage=" + totalPage + ", sorts="
-                + Arrays.toString(sorts) + ", desc=" + desc + ", params=" + params + "]";
+    public boolean isFullTotal() {
+        return fullTotal;
     }
 
+    public void setFullTotal(boolean fullTotal) {
+        this.fullTotal = fullTotal;
+    }
+
+    @Override
+    public String toString() {
+        return "Paging{" +
+                "total=" + total +
+                ", page=" + page +
+                ", pageSize=" + pageSize +
+                ", totalPage=" + totalPage +
+                ", start=" + start +
+                ", sort=" + sort +
+                ", sorts=" + Arrays.toString(sorts) +
+                ", sortIndex=" + sortIndex +
+                ", desc=" + desc +
+                ", fullTotal=" + fullTotal +
+                ", params=" + params +
+                '}';
+    }
 }
