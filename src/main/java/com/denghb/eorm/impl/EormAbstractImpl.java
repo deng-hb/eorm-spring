@@ -22,9 +22,9 @@ import java.util.List;
  */
 public abstract class EormAbstractImpl implements Eorm {
 
-    private Log log = LogFactory.getLog(this.getClass());
+    protected Log log = LogFactory.getLog(this.getClass());
 
-    private JdbcTemplate jdbcTemplate;
+    protected JdbcTemplate jdbcTemplate;
 
     public EormAbstractImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;

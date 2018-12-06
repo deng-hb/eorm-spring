@@ -140,6 +140,11 @@ public class EormUtils {
         return table;
     }
 
+    public static String getColumnName(Field field) {
+        Ecolumn ecolumn = field.getAnnotation(Ecolumn.class);
+        return null != ecolumn ? ecolumn.name() : field.getName();
+    }
+
 
     /**
      *

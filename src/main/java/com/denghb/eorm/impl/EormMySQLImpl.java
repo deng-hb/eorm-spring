@@ -7,9 +7,16 @@ import com.denghb.eorm.domain.PagingResult;
 import com.denghb.eorm.utils.EormUtils;
 import com.denghb.eorm.utils.ReflectUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -26,7 +33,7 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
 
         EormUtils.TableInfo table = EormUtils.getTableInfo(domain);
 
-        List<Object> params = new ArrayList<Object>();
+        final List<Object> params = new ArrayList<Object>();
 
         StringBuilder csb = new StringBuilder();
         StringBuilder vsb = new StringBuilder();
@@ -57,23 +64,51 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
         sb.append(vsb);
         sb.append(")");
 
-        String sql = sb.toString();
-        int res = this.execute(sql, params.toArray());
+        final String sql = sb.toString();
 
+        int res = 0;
+
+        List<Field> fields = table.getAllPrimaryKeyFields();
+        if (fields.size() == 1) {// 获取自增主键
+            if (log.isDebugEnabled()) {
+                log.debug("Params:" + Arrays.toString(params.toArray()));
+                log.debug("Execute SQL:" + sql);
+            }
+            Field field = fields.get(0);
+            final String keyColumn = EormUtils.getColumnName(field);
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+            res = jdbcTemplate.update(new PreparedStatementCreator() {
+                public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
+
+                    PreparedStatement ps = connection.prepareStatement(sql, new String[]{keyColumn});
+                    for (int i = 0; i < params.size(); i++) {
+                        Object obj = params.get(i);
+                        ps.setObject(i + 1, obj);
+                    }
+                    return ps;
+                }
+            }, keyHolder);
+
+            // 获取自动生成的ID并填充
+            Object object = ReflectUtils.getFieldValue(field, domain);
+            if (null == object) {
+                Number number = keyHolder.getKey();
+                Class type = field.getType();
+                if (type == Integer.class || type == int.class) {
+                    ReflectUtils.setFieldValue(field, domain, number.intValue());
+                } else if (type == Long.class || type == long.class) {
+                    ReflectUtils.setFieldValue(field, domain, number.longValue());
+                } else {
+                    throw new EormException();
+                }
+            }
+
+        } else {
+            res = this.execute(sql, params.toArray());
+        }
         if (1 != res) {
             throw new EormException();
         }
-        // 获取自动生成的ID并填充
-        List<Field> fields = table.getAllPrimaryKeyFields();
-        if (fields.size() == 1) {// 只适合单个主键
-            Field field = fields.get(0);
-            Object object = ReflectUtils.getFieldValue(field, domain);
-            if (null == object) {
-                Object value = selectOne(field.getType(), "select LAST_INSERT_ID() as id");
-                ReflectUtils.setFieldValue(field, domain, value);
-            }
-        }
-
     }
 
     public <T> int batchInsert(List<T> list) {
