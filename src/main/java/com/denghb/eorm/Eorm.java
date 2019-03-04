@@ -45,7 +45,6 @@ public interface Eorm {
      *
      * @param domain
      * @param <T>
-     * @return int
      */
     <T> void update(T domain);
 
@@ -93,9 +92,8 @@ public interface Eorm {
      *
      * @param list
      * @param <T>
-     * @return int
      */
-    <T> int batchInsert(List<T> list);
+    <T> void batchInsert(List<T> list);
 
     /**
      * 分页查询

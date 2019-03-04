@@ -1,6 +1,7 @@
 package com.denghb.eorm.utils;
 
 
+import com.denghb.eorm.EormException;
 import com.denghb.eorm.annotation.Ecolumn;
 import com.denghb.eorm.annotation.Etable;
 
@@ -16,12 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EormUtils {
     private static final Map<String, Object> _CACHE = new ConcurrentHashMap<String, Object>();
-    /**
-     * 默认主键名
-     */
-    private final static String DEFAULT_PRIMARY_KEY_NAME = "id";
-
-    private final static String serialVersionUID = "serialVersionUID";
 
     public static <T> String getTableName(final Class<T> clazz) {
 
@@ -33,7 +28,7 @@ public class EormUtils {
         // 获取表名
         Etable table = clazz.getAnnotation(Etable.class);
         if (null == table) {
-            return JdbcUtils.humpToUnderline(clazz.getSimpleName());
+            throw new EormException("not found @Etable");
         }
         StringBuilder sb = new StringBuilder("`");
         // 获取数据库名称
@@ -78,7 +73,7 @@ public class EormUtils {
         }
 
         if (primaryKeys.isEmpty()) {
-            primaryKeys.add(DEFAULT_PRIMARY_KEY_NAME);
+            throw new EormException("not found PrimaryKey");
         }
 
         _CACHE.put(key, primaryKeys);
@@ -98,41 +93,22 @@ public class EormUtils {
         List<Field> fields = ReflectUtils.getFields(clazz);
         for (Field field : fields) {
 
-            if (serialVersionUID.equals(field.getName())) {
+            Ecolumn ecolumn = field.getAnnotation(Ecolumn.class);
+            if (null == ecolumn) {
                 continue;
             }
-            Object value = ReflectUtils.getFieldValue(field, domain);
-
-            Ecolumn ecolumn = field.getAnnotation(Ecolumn.class);
-            if (null != ecolumn) {
-
-                boolean isPrimaryKey = ecolumn.primaryKey();
-                if (isPrimaryKey) {
-                    table.getAllPrimaryKeyFields().add(field);
-                }
-
-                List<Column> columnList = isPrimaryKey ? table.getPrimaryKeyColumns() : table.getCommonColumns();
-                if (null != value) {
-                    columnList.add(new Column(ecolumn.name(), value));
-                    table.getAllColumns().add(new Column(ecolumn.name(), value));
-                }
-
-            } else {
-
-                String columnName = field.getName();
-                columnName = JdbcUtils.humpToUnderline(columnName);
-                boolean isPrimaryKey = DEFAULT_PRIMARY_KEY_NAME.equals(columnName);
-                if (isPrimaryKey) {
-                    table.getAllPrimaryKeyFields().add(field);
-                }
-
-                List<Column> columnList = isPrimaryKey ? table.getPrimaryKeyColumns() : table.getCommonColumns();
-                if (null != value) {
-                    columnList.add(new Column(columnName, value));
-                    table.getAllColumns().add(new Column(columnName, value));
-                }
-
+            boolean isPrimaryKey = ecolumn.primaryKey();
+            if (isPrimaryKey) {
+                table.getAllPrimaryKeyFields().add(field);
             }
+
+            List<Column> columnList = isPrimaryKey ? table.getPrimaryKeyColumns() : table.getCommonColumns();
+            Object value = ReflectUtils.getFieldValue(field, domain);
+            if (null != value) {
+                columnList.add(new Column(ecolumn.name(), value));
+                table.getAllColumns().add(new Column(ecolumn.name(), value));
+            }
+
 
         }
 

@@ -111,9 +111,9 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
         }
     }
 
-    public <T> int batchInsert(List<T> list) {
+    public <T> void batchInsert(List<T> list) {
         if (null == list || list.isEmpty()) {
-            return 0;
+            throw new EormException("list is empty...");
         }
 
         // 取第一个样本
@@ -147,7 +147,7 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
             table = EormUtils.getTableInfo(list.get(i));
 
             if (columnSize != table.getAllColumns().size()) {
-                throw new RuntimeException("column size difference ...");
+                throw new EormException("column size difference ...");
             }
 
             for (int j = 0; j < columnSize; j++) {
@@ -173,7 +173,9 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
 
         String sql = sb.toString();
         int res = this.execute(sql, params.toArray());
-        return res;
+        if (res != list.size()) {
+            throw new EormException();
+        }
     }
 
     public <T> PagingResult<T> page(Class<T> clazz, StringBuffer sql, Paging paging) {
