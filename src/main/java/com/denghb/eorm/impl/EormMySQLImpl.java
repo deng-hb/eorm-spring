@@ -8,6 +8,7 @@ import com.denghb.eorm.utils.EormUtils;
 import com.denghb.eorm.utils.ReflectUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
@@ -20,10 +21,12 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * @see {NamedParameterJdbcTemplate}
  * MySQL 实现
  */
 public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
 
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     public EormMySQLImpl(JdbcTemplate jdbcTemplate) {
         super(jdbcTemplate);

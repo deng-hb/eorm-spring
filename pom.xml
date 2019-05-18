@@ -6,7 +6,7 @@
 
     <groupId>com.denghb</groupId>
     <artifactId>eorm-spring</artifactId>
-    <version>1.0.5</version>
+    <version>2.0.0-SNAPSHOT</version>
 
     <name>eorm-spring</name>
     <url>https://github.com/deng-hb/eorm-spring</url>
@@ -104,12 +104,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.denghb</groupId>
-            <artifactId>eorm-spring-processor</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -122,9 +116,7 @@
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
-                    <debug>true</debug>
-                    <debuglevel>lines,vars,source</debuglevel>
-                    <!--<compilerArgument>-proc:none</compilerArgument>-->
+                    <compilerArgument>-proc:none</compilerArgument>
                 </configuration>
             </plugin>
             <plugin>
