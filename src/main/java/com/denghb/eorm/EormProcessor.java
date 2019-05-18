@@ -19,6 +19,15 @@ import java.util.*;
 public class EormProcessor extends AbstractProcessor {
 
     @Override
+    public SourceVersion getSupportedSourceVersion() {
+        if (SourceVersion.latest().compareTo(SourceVersion.RELEASE_6) > 0) {
+            return SourceVersion.latest();
+        } else {
+            return SourceVersion.RELEASE_6;
+        }
+    }
+
+    @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
         try {
