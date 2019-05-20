@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * @see {NamedParameterJdbcTemplate}
+ * @see org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
  * MySQL 实现
  */
 public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
