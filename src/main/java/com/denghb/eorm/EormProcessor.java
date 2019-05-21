@@ -1,6 +1,5 @@
 package com.denghb.eorm;
 
-
 import com.sun.source.util.Trees;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.tree.JCTree;
@@ -14,14 +13,16 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
+import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
 
 @SupportedAnnotationTypes("*")
 public class EormProcessor extends AbstractProcessor {
@@ -37,8 +38,8 @@ public class EormProcessor extends AbstractProcessor {
         super.init(processingEnv);
         javacProcessingEnv = (JavacProcessingEnvironment) processingEnv;
 
-        elements = processingEnv.getElementUtils();
-        filer = processingEnv.getFiler();
+        elements = javacProcessingEnv.getElementUtils();
+        filer = javacProcessingEnv.getFiler();
 
         trees = Trees.instance(javacProcessingEnv);
         maker = TreeMaker.instance(javacProcessingEnv.getContext());
@@ -46,19 +47,21 @@ public class EormProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        if (roundEnv.processingOver()) return true;
-        try {
-            Set<? extends Element> elements = roundEnv.getRootElements();
-            for (Element element : elements) {
+        if (roundEnv.processingOver()) return false;
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "EormProcessor processing");
+
+        Set<? extends Element> elements = roundEnv.getRootElements();
+        for (Element element : elements) {
+            try {
                 doProcess(element);
+            } catch (Exception e) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, e.getMessage(), element);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-        return true;
+        return false;
     }
 
-    private void doProcess(Element element) throws IOException {
+    private void doProcess(Element element) throws Exception {
 
         if (element.getKind() != ElementKind.CLASS) {
             return;
@@ -69,35 +72,46 @@ public class EormProcessor extends AbstractProcessor {
         String packageName = packageElement.getQualifiedName().toString();
         String className = typeElement.getSimpleName().toString();
 
-        FileObject fileObject = filer.
-                getResource(StandardLocation.SOURCE_PATH, packageName, className + JavaFileObject.Kind.SOURCE.extension);
+        String sourceCode = null;
+        try {
+            FileObject fileObject = filer.getResource(StandardLocation.SOURCE_PATH, packageName, className + JavaFileObject.Kind.SOURCE.extension);
+            sourceCode = fileObject.getCharContent(true).toString();
+        } catch (Exception e) {
+            // processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, e.getMessage(), element);
+        }
 
-        InputStream is = fileObject.openInputStream();
-        byte[] bytes = new byte[is.available()];
-        is.read(bytes);
-        is.close();
-
-        String str = new String(bytes);
+        // TODO IDE build
+        if (null == sourceCode) {
+            FileObject fileObject = filer.getResource(StandardLocation.CLASS_OUTPUT, packageName, className + JavaFileObject.Kind.SOURCE.extension);
+            String targetPath = fileObject.toUri().getPath();
+            String sourcePath = targetPath.replace("target/classes", "src/main/java");
+            File f = new File(sourcePath);
+            FileInputStream is = new FileInputStream(f);
+            byte[] bytes = new byte[is.available()];
+            is.read(bytes);
+            is.close();
+            sourceCode = new String(bytes);
+        }
 
         // pos, mut-line code
         final Map<Integer, String> templates = new HashMap<Integer, String>();
-        for (int i = 0; i < str.length(); i++) {
-            char c = str.charAt(i);
+        for (int i = 0; i < sourceCode.length(); i++) {
+            char c = sourceCode.charAt(i);
             // `""/*{` start
-            if ('"' == c && '"' == str.charAt(i + 1) && '/' == str.charAt(i + 2)
-                    && '*' == str.charAt(i + 3) && '{' == str.charAt(i + 4)) {
+            if ('"' == c && '"' == sourceCode.charAt(i + 1) && '/' == sourceCode.charAt(i + 2)
+                    && '*' == sourceCode.charAt(i + 3) && '{' == sourceCode.charAt(i + 4)) {
                 int pos = i;
                 int j = i + 5;
-                StringBuffer sb = new StringBuffer();
-                for (; j < str.length(); j++) {
+                StringBuilder temp = new StringBuilder();
+                for (; j < sourceCode.length(); j++) {
                     // `}*/;` end
-                    if ('}' == str.charAt(j) && '*' == str.charAt(j + 1)
-                            && '/' == str.charAt(j + 2) && ';' == str.charAt(j + 3)) {
+                    if ('}' == sourceCode.charAt(j) && '*' == sourceCode.charAt(j + 1)
+                            && '/' == sourceCode.charAt(j + 2) && ';' == sourceCode.charAt(j + 3)) {
                         break;
                     }
-                    sb.append(str.charAt(j));
+                    temp.append(sourceCode.charAt(j));
                 }
-                templates.put(pos, sb.toString());
+                templates.put(pos, temp.toString());
                 i = j;
             }
         }
@@ -111,6 +125,7 @@ public class EormProcessor extends AbstractProcessor {
             public void visitVarDef(JCTree.JCVariableDecl jcVariableDecl) {
                 super.visitVarDef(jcVariableDecl);
 
+                // String str = ""/*{code}*/
                 int pos = jcVariableDecl.pos + jcVariableDecl.name.length() + 3;
                 String content = templates.get(pos);
                 if (null != content) {
