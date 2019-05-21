@@ -105,11 +105,9 @@
         </dependency>
 
         <dependency>
-            <groupId>jdk.tools</groupId>
-            <artifactId>jdk.tools</artifactId>
-            <version>1.6</version>
-            <scope>system</scope>
-            <systemPath>${JAVA_HOME}/lib/tools.jar</systemPath>
+            <groupId>com.denghb</groupId>
+            <artifactId>multi-line</artifactId>
+            <version>1.0.2</version>
         </dependency>
 
     </dependencies>
@@ -124,7 +122,6 @@
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
-                    <compilerArgument>-proc:none</compilerArgument>
                 </configuration>
             </plugin>
             <plugin>

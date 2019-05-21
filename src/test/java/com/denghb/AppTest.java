@@ -4,13 +4,21 @@ import com.denghb.eorm.Eorm;
 import com.denghb.eorm.domain.Paging;
 import com.denghb.eorm.domain.PagingResult;
 import com.denghb.eorm.impl.EormMySQLImpl;
+import com.denghb.model.Pager;
 import com.denghb.model.User;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -100,4 +108,60 @@ public class AppTest {
         Thread.sleep(Long.MAX_VALUE);
     }
 
+    @Test
+    public void testName() {
+        ApplicationContext ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
+
+
+        NamedParameterJdbcTemplate namedParameterJdbcTemplate = ctx.getBean(NamedParameterJdbcTemplate.class);
+
+        String sql = "select * from user where id in (:ids)";
+        Map<String, Object> map = new HashMap<String, Object>();
+//        map.put("ids", new int[]{1,2,3}); // fail
+//        map.put("ids", Arrays.asList(1, 2, 3));
+
+        Pager p = new Pager() {
+            private List<Integer> ids = Arrays.asList(1, 2, 3);
+
+            public List<Integer> getIds() {
+                return ids;
+            }
+
+            public void setIds(List<Integer> ids) {
+                this.ids = ids;
+            }
+        };
+
+        List<User> list = namedParameterJdbcTemplate.query(sql, new BeanPropertySqlParameterSource(p), BeanPropertyRowMapper.newInstance(User.class));
+
+        System.out.println(list);
+    }
+
+
+    @Test
+    public void testPager() {
+        ApplicationContext ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
+
+
+        NamedParameterJdbcTemplate namedParameterJdbcTemplate = ctx.getBean(NamedParameterJdbcTemplate.class);
+
+        String sql = ""/*{
+        select * from user where id in (:ids) limit :pageStart, :pageSize
+        }*/;
+        Pager p = new Pager() {
+            private List<Integer> ids = Arrays.asList(1, 2, 3);
+
+            public List<Integer> getIds() {
+                return ids;
+            }
+
+            public void setIds(List<Integer> ids) {
+                this.ids = ids;
+            }
+        };
+        p.setPage(1);
+        List<User> list = namedParameterJdbcTemplate.query(sql, new BeanPropertySqlParameterSource(p), BeanPropertyRowMapper.newInstance(User.class));
+
+        System.out.println(list);
+    }
 }
