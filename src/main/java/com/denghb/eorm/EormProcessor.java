@@ -27,35 +27,39 @@ import java.util.Set;
 @SupportedAnnotationTypes("*")
 public class EormProcessor extends AbstractProcessor {
 
-    private JavacProcessingEnvironment javacProcessingEnv;
     private Elements elements;
     private Filer filer;
     private Trees trees;
     private TreeMaker maker;
+    private Messager messager;
 
     @Override
-    public synchronized void init(ProcessingEnvironment processingEnv) {
-        super.init(processingEnv);
-        javacProcessingEnv = (JavacProcessingEnvironment) processingEnv;
+    public synchronized void init(ProcessingEnvironment env) {
+        super.init(env);
 
-        elements = javacProcessingEnv.getElementUtils();
-        filer = javacProcessingEnv.getFiler();
+        messager = env.getMessager();
+        if (!(env instanceof JavacProcessingEnvironment)) {
+            messager.printMessage(Diagnostic.Kind.ERROR, "EormProcessor Need com.sun.tools.javac.processing.JavacProcessingEnvironment");
+        }
 
-        trees = Trees.instance(javacProcessingEnv);
-        maker = TreeMaker.instance(javacProcessingEnv.getContext());
+        JavacProcessingEnvironment jpe = (JavacProcessingEnvironment) env;
+        elements = jpe.getElementUtils();
+        filer = jpe.getFiler();
+        trees = Trees.instance(jpe);
+        maker = TreeMaker.instance(jpe.getContext());
     }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         if (roundEnv.processingOver()) return false;
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "EormProcessor processing");
+        messager.printMessage(Diagnostic.Kind.NOTE, "EormProcessor processing");
 
         Set<? extends Element> elements = roundEnv.getRootElements();
         for (Element element : elements) {
             try {
                 doProcess(element);
             } catch (Exception e) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, e.getMessage(), element);
+                messager.printMessage(Diagnostic.Kind.WARNING, e.getMessage(), element);
             }
         }
         return false;
@@ -77,7 +81,7 @@ public class EormProcessor extends AbstractProcessor {
             FileObject fileObject = filer.getResource(StandardLocation.SOURCE_PATH, packageName, className + JavaFileObject.Kind.SOURCE.extension);
             sourceCode = fileObject.getCharContent(true).toString();
         } catch (Exception e) {
-            // processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, e.getMessage(), element);
+            // messager.printMessage(Diagnostic.Kind.WARNING, e.getMessage(), element);
         }
 
         // TODO IDE build
