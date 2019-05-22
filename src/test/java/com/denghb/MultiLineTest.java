@@ -14,6 +14,10 @@ public class MultiLineTest {
         String a = ""/*{
             I'm multi-line
         }*/;
+
+        StringBuilder s = new StringBuilder(a);
+        s.append("a");
+        a = s.toString();
         System.out.println(A);
         System.out.println(a);
     }
