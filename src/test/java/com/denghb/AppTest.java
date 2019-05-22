@@ -4,6 +4,7 @@ import com.denghb.eorm.Eorm;
 import com.denghb.eorm.domain.Paging;
 import com.denghb.eorm.domain.PagingResult;
 import com.denghb.eorm.impl.EormMySQLImpl;
+import com.denghb.eorm.utils.SqlTemplateUtils;
 import com.denghb.model.Pager;
 import com.denghb.model.User;
 import org.junit.Test;
@@ -146,10 +147,20 @@ public class AppTest {
         NamedParameterJdbcTemplate namedParameterJdbcTemplate = ctx.getBean(NamedParameterJdbcTemplate.class);
 
         String sql = ""/*{
-        select * from user where id in (:ids) limit :pageStart, :pageSize
+        select * from user where 1 = 1
+
+        #ifNotBlank(name)
+                and name like :name
+            #end
+            #ifNotEmpty(ids)
+                and id in (:ids)
+            #end limit :pageStart, :pageSize
         }*/;
         Pager p = new Pager() {
-            private List<Integer> ids = Arrays.asList(1, 2, 3);
+
+            private String name = "%x";
+
+            private List<Integer> ids;// = Arrays.asList(1, 2, 3);
 
             public List<Integer> getIds() {
                 return ids;
@@ -158,8 +169,19 @@ public class AppTest {
             public void setIds(List<Integer> ids) {
                 this.ids = ids;
             }
+
+            public String getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                this.name = name;
+            }
         };
         p.setPage(1);
+
+        sql = SqlTemplateUtils.parse(sql, p);
+
         List<User> list = namedParameterJdbcTemplate.query(sql, new BeanPropertySqlParameterSource(p), BeanPropertyRowMapper.newInstance(User.class));
 
         System.out.println(list);
