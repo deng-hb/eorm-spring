@@ -1,5 +1,7 @@
 package com.denghb;
 
+import com.denghb.eorm.utils.SqlTemplateUtils;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +29,7 @@ public class SqlParserTest {
         params.put("ids", Arrays.asList(1, 2, 3));
 
         long start = System.currentTimeMillis();
-//        System.out.println(SqlTemplateUtils.parse(sql, params));
+        System.out.println(SqlTemplateUtils.parse(sql, params));
 //        System.out.println(sql);
         System.out.println(System.currentTimeMillis() - start);
     }
