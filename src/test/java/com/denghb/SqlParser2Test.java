@@ -16,6 +16,9 @@ public class SqlParser2Test {
             #if (ids)
                 and id in (:ids)
             #end
+            #if (xyz)
+                and id in (:ids)
+            #end
             limit :pageStart, :pageSize
         }*/;
 
