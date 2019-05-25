@@ -17,6 +17,14 @@ public class EOrmQueryTemplateParser {
 
     public static String parse(String sqlTemplate, Map<String, Object> params) {
 
+        sqlTemplate = sqlTemplate.replaceAll("\n", " ");
+        sqlTemplate = sqlTemplate.replaceAll("\t", " ");
+        sqlTemplate = sqlTemplate.replaceAll("\r", " ");
+        sqlTemplate = sqlTemplate.replaceAll("   ", " ");
+        sqlTemplate = sqlTemplate.replaceAll("  ", " ");
+        sqlTemplate = sqlTemplate.replaceAll("   ", " ");
+        sqlTemplate = sqlTemplate.replaceAll("  ", " ");
+
         if (!sqlTemplate.contains("#")) {
             return sqlTemplate;
         }
