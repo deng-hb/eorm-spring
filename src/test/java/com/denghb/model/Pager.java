@@ -1,33 +1,20 @@
 package com.denghb.model;
 
+import com.denghb.eorm.page.EPageReq;
+
 /**
  * @Auther: denghb
  * @Date: 2019-05-21 23:57
  */
-public class Pager {
+public class Pager extends EPageReq {
 
-    private int page = 1;
+    private String name;
 
-    private int pageSize = 20;
-
-    public int getPage() {
-        return page;
+    public String getName() {
+        return name;
     }
 
-    public void setPage(int page) {
-        this.page = page;
-    }
-
-    public int getPageSize() {
-        return pageSize;
-    }
-
-    public void setPageSize(int pageSize) {
-        this.pageSize = pageSize;
-    }
-
-    public int getPageStart() {
-
-        return (page - 1) * pageSize;
+    public void setName(String name) {
+        this.name = name;
     }
 }

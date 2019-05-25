@@ -1,39 +1,43 @@
 package com.denghb;
 
-import java.util.*;
+import com.denghb.model.User;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class SqlParser2Test {
+    static ExpressionParser ep = new SpelExpressionParser();
 
     public static void main(String[] args) {
         String sql = ""/*{
             select * from user where 1 = 1
-            #if (name)
+            #{ null != #name && #name != '' }
                 and name like :name
-            #end
-            #if (age)
-                and age = :age
-            #end
-            #if (ids)
-                and id in (:ids)
-            #end
-            #if (xyz)
-                and id in (:ids)
             #end
             limit :pageStart, :pageSize
         }*/;
 
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("name", "%张%");
-        params.put("age", 18);
-        params.put("ids", Arrays.asList(1, 2, 3));
-        params.put("ids", Arrays.asList(1, 2, 3));
-        params.put("ids", Arrays.asList(1, 2, 3));
-        params.put("ids", Arrays.asList(1, 2, 3));
+        params.put("name", " ");
 
+        User u = new User();
+        u.setName("a");
         long start = System.currentTimeMillis();
-        System.out.println(parse(sql, params));
+        StandardEvaluationContext ctx = new StandardEvaluationContext();
+        ctx.setVariables(params);
+//        System.out.println(parse(sql, params));
 //        System.out.println(sql);
+//        ctx.setVariable("name", "Hello");
+
+
+        System.out.println(ep.parseExpression("#name != null").getValue(ctx));
         System.out.println(System.currentTimeMillis() - start);
+
+
     }
 
 
@@ -51,33 +55,19 @@ public class SqlParser2Test {
             char c = sqlTemplate.charAt(i);
 
             // #if
-            if ('#' == c && 'i' == sqlTemplate.charAt(i + 1) && 'f' == sqlTemplate.charAt(i + 2)) {
-                i += 3;
-                append = false;
-                StringBuilder name = new StringBuilder();
+            if ('#' == c && '{' == sqlTemplate.charAt(i + 1)) {
+                i = i + 2;
+                StringBuilder el = new StringBuilder();
                 for (; i < sqlTemplate.length(); i++) {
                     c = sqlTemplate.charAt(i);
-                    if (')' == c) {
+                    if ('}' == c) {
                         break;
                     }
-                    if ('(' != c && ' ' != c) {
-                        name.append(c);
-                    }
+                    el.append(c);
                 }
-                Object object = params.get(name.toString());
-                if (null != object) {
-                    if (object instanceof Boolean) {
-                        append = (Boolean) object;
-                    } else if (object instanceof List) {
-                        append = !((Collection) object).isEmpty();
-                    } else if (object instanceof CharSequence) {
-                        append = String.valueOf(object).trim().length() > 0;
-                    } else if (object instanceof Number) {
-                        append = true;
-                    } else if (object instanceof Date) {
-                        append = true;
-                    }
-                }
+                StandardEvaluationContext ctx = new StandardEvaluationContext();
+                ctx.setVariables(params);
+                append = ep.parseExpression(el.toString()).getValue(ctx, Boolean.class);
             } else if ('#' == c && 'e' == sqlTemplate.charAt(i + 1) && 'n' == sqlTemplate.charAt(i + 2)
                     && 'd' == sqlTemplate.charAt(i + 3)) {
                 // #end

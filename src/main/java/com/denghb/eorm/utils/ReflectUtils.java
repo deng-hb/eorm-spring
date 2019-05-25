@@ -15,12 +15,19 @@ public class ReflectUtils {
      * 获得实体类的所有属性（该方法递归的获取当前类及父类中声明的字段。最终结果以list形式返回）
      */
     public static List<Field> getFields(Class<?> clazz) {
-        if (clazz == null) {
-            return null;
-        }
-
         List<Field> fields = new ArrayList<Field>();
+        if (clazz == null) {
+            return fields;
+        }
         Field[] classFields = clazz.getDeclaredFields();
+        for (Field field : classFields) {
+            int mod = field.getModifiers();
+            if (Modifier.isStatic(mod) || Modifier.isFinal(mod)) {
+                continue;
+            }
+            field.setAccessible(true);
+            fields.add(field);
+        }
         fields.addAll(Arrays.asList(classFields));
 
         Class<?> superclass = clazz.getSuperclass();
@@ -63,24 +70,18 @@ public class ReflectUtils {
      * Map -> Object
      *
      * @param map
-     * @param beanClass
+     * @param clazz
      * @return
-     * @throws Exception
      */
-    public static Object mapToObject(Map<String, Object> map, Class<?> beanClass) {
+    public static Object mapToObject(Map<String, Object> map, Class<?> clazz) {
         if (map == null)
             return null;
 
         try {
-            Object obj = beanClass.newInstance();
+            Object obj = clazz.newInstance();
 
-            Field[] fields = obj.getClass().getDeclaredFields();
+            List<Field> fields = getFields(obj.getClass());
             for (Field field : fields) {
-                int mod = field.getModifiers();
-                if (Modifier.isStatic(mod) || Modifier.isFinal(mod)) {
-                    continue;
-                }
-
                 field.setAccessible(true);
                 field.set(obj, map.get(field.getName()));
             }
@@ -104,16 +105,26 @@ public class ReflectUtils {
         try {
             Map<String, Object> map = new HashMap<String, Object>();
 
-            Field[] declaredFields = obj.getClass().getDeclaredFields();
-            for (Field field : declaredFields) {
+            List<Field> fields = getFields(obj.getClass());
+            for (Field field : fields) {
                 field.setAccessible(true);
                 map.put(field.getName(), field.get(obj));
             }
 
             return map;
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Can't objectToMap", e);
         }
     }
 
+    /**
+     * 单类型
+     * TODO
+     *
+     * @param clazz
+     * @return
+     */
+    public static boolean isSingleClass(Class clazz) {
+        return clazz.isPrimitive() || Number.class.isAssignableFrom(clazz) || CharSequence.class.isAssignableFrom(clazz) || Date.class.isAssignableFrom(clazz);
+    }
 }

@@ -1,12 +1,11 @@
 package com.denghb;
 
-import com.denghb.eorm.Eorm;
-import com.denghb.eorm.domain.Paging;
-import com.denghb.eorm.domain.PagingResult;
-import com.denghb.eorm.impl.EormMySQLImpl;
-import com.denghb.eorm.utils.SqlTemplateUtils;
+import com.denghb.eorm.EOrm;
+import com.denghb.eorm.impl.MySQLEOrmImpl;
+import com.denghb.eorm.parse.EOrmQueryTemplateParser;
 import com.denghb.model.Pager;
 import com.denghb.model.User;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -28,22 +27,35 @@ import java.util.concurrent.Executors;
  */
 @Service
 public class AppTest {
+
+    private ApplicationContext ctx;
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    private JdbcTemplate jdbcTemplate;
+    private EOrm db;
+
+    @Before
+    public void before() {
+        ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
+        jdbcTemplate = ctx.getBean(JdbcTemplate.class);
+        namedParameterJdbcTemplate = ctx.getBean(NamedParameterJdbcTemplate.class);
+        db = ctx.getBean(EOrm.class);
+    }
+
     /**
      * Rigorous Test :-)
      */
     @Test
     public void test() {
-        ApplicationContext ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
+
 
         // XML 配置
-        Eorm db = ctx.getBean(Eorm.class);
+
         System.out.println(db);
         Long count = db.selectOne(Long.class, "select count(*) from user");
         System.out.println(count);
 
         // 代码创建
-        JdbcTemplate jdbcTemplate = ctx.getBean(JdbcTemplate.class);
-        Eorm db2 = new EormMySQLImpl(jdbcTemplate);
+        EOrm db2 = new MySQLEOrmImpl(jdbcTemplate, namedParameterJdbcTemplate);
         System.out.println(db2);
         Long count2 = db2.selectOne(Long.class, "select count(*) from user");
         System.out.println(count2);
@@ -57,21 +69,12 @@ public class AppTest {
 
         System.out.println(user);
 
-        PagingResult<User> result = db2.page(User.class, new StringBuffer("select * from user"), new Paging() {
-            @Override
-            public String[] getSorts() {
-                return new String[]{"id"};
-            }
-        });
-
-        System.out.println(result);
     }
 
     InheritableThreadLocal<Integer> idHub = new InheritableThreadLocal<Integer>();
 
     @Test
     public void test2() throws InterruptedException {
-        final ApplicationContext ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
         ExecutorService executorService = Executors.newFixedThreadPool(10);
 
         for (int i = 0; i < 1000; i++) {
@@ -80,8 +83,6 @@ public class AppTest {
                 public void run() {
                     User user = new User();
 
-                    // XML 配置
-                    Eorm db = ctx.getBean(Eorm.class);
 
                     user.setAge(10);
                     user.setMobile("123123123");
@@ -93,11 +94,10 @@ public class AppTest {
                         @Override
                         public void run() {
                             // XML 配置
-                            Eorm db = ctx.getBean(Eorm.class);
                             User user = new User();
                             user.setId(idHub.get());
                             user.setEmail("test@test.com");
-                            db.update(user);
+                            db.updateById(user);
                             idHub.remove();
                         }
                     }).start();
@@ -113,8 +113,6 @@ public class AppTest {
     public void testName() {
         ApplicationContext ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
 
-
-        NamedParameterJdbcTemplate namedParameterJdbcTemplate = ctx.getBean(NamedParameterJdbcTemplate.class);
 
         String sql = "select * from user where id in (:ids)";
         Map<String, Object> map = new HashMap<String, Object>();
@@ -158,9 +156,9 @@ public class AppTest {
         }*/;
         Pager p = new Pager() {
 
-            private String name = "%x";
+            private String name;// = "%x";
 
-            private List<Integer> ids;// = Arrays.asList(1, 2, 3);
+            private List<Integer> ids = Arrays.asList(1, 2, 3);
 
             public List<Integer> getIds() {
                 return ids;
@@ -180,7 +178,7 @@ public class AppTest {
         };
         p.setPage(1);
 
-        sql = SqlTemplateUtils.parse(sql, p);
+        sql = EOrmQueryTemplateParser.parse(sql, p);
 
         List<User> list = namedParameterJdbcTemplate.query(sql, new BeanPropertySqlParameterSource(p), BeanPropertyRowMapper.newInstance(User.class));
 

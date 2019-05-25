@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Target(value = {ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Etable {
+public @interface ETable {
 
     /**
      * 表名

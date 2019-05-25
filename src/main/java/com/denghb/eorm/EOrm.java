@@ -1,7 +1,7 @@
 package com.denghb.eorm;
 
-import com.denghb.eorm.domain.Paging;
-import com.denghb.eorm.domain.PagingResult;
+import com.denghb.eorm.page.EPageReq;
+import com.denghb.eorm.page.EPageRes;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import java.util.List;
  *
  * @author denghb
  */
-public interface Eorm {
+public interface EOrm {
 
     /**
      * 执行一条SQL
@@ -46,7 +46,7 @@ public interface Eorm {
      * @param domain
      * @param <T>
      */
-    <T> void update(T domain);
+    <T> void updateById(T domain);
 
     /**
      * 删除一个对象
@@ -54,7 +54,7 @@ public interface Eorm {
      * @param domain
      * @param <T>
      */
-    <T> void delete(T domain);
+    <T> void deleteById(T domain);
 
 
     /**
@@ -64,7 +64,7 @@ public interface Eorm {
      * @param ids
      * @param <T>
      */
-    <T> void delete(Class<T> clazz, Object... ids);
+    <T> void deleteById(Class<T> clazz, Object... ids);
 
     /**
      * 查询一个对象
@@ -81,29 +81,21 @@ public interface Eorm {
      * 按主键查询一条记录
      *
      * @param clazz
-     * @param args
+     * @param ids
      * @param <T>
      * @return T
      */
-    <T> T selectByPrimaryKey(Class<T> clazz, Object... args);
-
-    /**
-     * 批量插入
-     *
-     * @param list
-     * @param <T>
-     */
-    <T> void batchInsert(List<T> list);
+    <T> T selectById(Class<T> clazz, Object... ids);
 
     /**
      * 分页查询
      *
      * @param clazz
      * @param sql
-     * @param paging
+     * @param pageReq
      * @param <T>
-     * @return PagingResult
+     * @return EPageRes
      */
-    <T> PagingResult<T> page(Class<T> clazz, StringBuffer sql, Paging paging);
+    <T> EPageRes<T> selectPage(Class<T> clazz, String sql, EPageReq pageReq);
 
 }

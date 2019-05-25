@@ -35,11 +35,12 @@
     </bean>
 
     <bean id="namedParameterJdbcTemplate" class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
-        <constructor-arg index="0" ref="dataSource" ></constructor-arg>
+        <constructor-arg index="0" ref="dataSource" />
     </bean>
 
-    <bean id="eorm" class="com.denghb.eorm.impl.EormMySQLImpl">
-        <constructor-arg index="0" ref="jdbcTemplate" ></constructor-arg>
+    <bean id="eorm" class="com.denghb.eorm.impl.MySQLEOrmImpl">
+        <constructor-arg index="0" ref="jdbcTemplate" />
+        <constructor-arg index="1" ref="namedParameterJdbcTemplate" />
     </bean>
 
 </beans>
