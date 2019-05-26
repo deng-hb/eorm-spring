@@ -1,7 +1,6 @@
 package com.denghb.eorm.page;
 
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -14,9 +13,9 @@ public class EPageReq implements java.io.Serializable {
 
     private int pageSize = 20;
 
-    private List<String> desc = new ArrayList<String>();
+    private List<String> desc;
 
-    private List<String> asc = new ArrayList<String>();
+    private List<String> asc;
 
     public int getPage() {
         return page;

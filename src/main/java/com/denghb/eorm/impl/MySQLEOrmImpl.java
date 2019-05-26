@@ -23,7 +23,6 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
     public <T> EPageRes<T> selectPage(Class<T> clazz, String sql, EPageReq pageReq) {
         EPageRes<T> res = new EPageRes<T>();
         Map<String, Object> params = ReflectUtils.objectToMap(pageReq);
-// TODO order by
 
         String totalSql = "select count(*) from (" + sql + ") temp";
         long total = selectOne(Long.class, totalSql, params);
@@ -33,10 +32,10 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
         List<String> desc = pageReq.getDesc();
         StringBuilder asb = new StringBuilder();
         StringBuilder dsb = new StringBuilder();
-        if (!asc.isEmpty() || !desc.isEmpty()) {
+        if ((null != asc && !asc.isEmpty()) || (null != desc && !desc.isEmpty())) {
             sql += " order by ";
         }
-        if (!asc.isEmpty()) {
+        if (null != asc && !asc.isEmpty()) {
             for (String column : asc) {
                 if (0 < asb.length()) {
                     asb.append(',');
@@ -48,7 +47,7 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
             asb.append(" asc");
         }
 
-        if (!desc.isEmpty()) {
+        if (null != desc && !desc.isEmpty()) {
             if (0 < asb.length()) {
                 asb.append(',');
             }
