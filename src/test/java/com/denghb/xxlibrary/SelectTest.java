@@ -17,7 +17,7 @@ public class SelectTest extends BaseTest {
     @Test
     public void select1() {
 
-        List<Student> list = db.select(Student.class, "select * from user ");
+        List<Student> list = db.select(Student.class, "select * from student ");
 
         System.out.println(list);
     }
@@ -28,7 +28,7 @@ public class SelectTest extends BaseTest {
 
         Map<String, Object> params = new HashMap<>();
         params.put("name", "张%");
-        List<Student> list = db.select(Student.class, "select * from user where name like :name", params);
+        List<Student> list = db.select(Student.class, "select * from student where name like :name", params);
         System.out.println(list);
     }
 

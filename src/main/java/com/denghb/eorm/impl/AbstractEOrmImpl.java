@@ -190,11 +190,11 @@ public abstract class AbstractEOrmImpl implements EOrm {
             }
             if (column.getPrimaryKey()) {
                 if (wsb.length() > 0) {
-                    ssb.append(" and ");
+                    wsb.append(" and ");
                 }
-                ssb.append("`");
-                ssb.append(column.getName());
-                ssb.append("` = ?");
+                wsb.append("`");
+                wsb.append(column.getName());
+                wsb.append("` = ?");
                 params.add(value);
             } else {
                 if (ssb.length() > 0) {

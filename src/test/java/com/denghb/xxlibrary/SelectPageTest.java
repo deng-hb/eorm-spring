@@ -19,9 +19,9 @@ public class SelectPageTest extends BaseTest {
         StudentPageReq p = new StudentPageReq();
         System.out.println(JSON.toJSON(p));
         p.setAsc(Arrays.asList("name"));
-        p.setDesc(Arrays.asList("age"));
+        p.setDesc(Arrays.asList("birthday"));
         String sql = ""/*{
-            select * from user where 1 = 1
+            select * from student where 1 = 1
             #{ null != #name && #name != '' }
                 and name like :name
             #end

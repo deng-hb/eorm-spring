@@ -13,6 +13,7 @@ CREATE TABLE `student` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `name` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '姓名',
   `gender` tinyint(2) NOT NULL COMMENT '0:女，1:男',
+  `birthday` date DEFAULT NULL COMMENT '生日',
   `created_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '插入时间',
   `updated_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
@@ -24,7 +25,7 @@ CREATE TABLE `student` (
 ) ENGINE=InnoDB AUTO_INCREMENT=100001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学生信息表'
  <pre>
  * @author denghb
- * @generateTime Tue May 28 00:50:46 CST 2019
+ * @generateTime Tue May 28 00:56:26 CST 2019
  */
 @ETable(name="student", database="xxlibrary")
 public class Student implements java.io.Serializable {
@@ -42,6 +43,10 @@ public class Student implements java.io.Serializable {
 	/** 0:女，1:男 */
 	@EColumn(name="gender")
 	private Integer gender;
+	
+	/** 生日 */
+	@EColumn(name="birthday")
+	private java.util.Date birthday;
 	
 	/** 插入时间 */
 	@EColumn(name="created_time")
@@ -82,6 +87,14 @@ public class Student implements java.io.Serializable {
 
 	public void setGender(Integer gender) {
 		this.gender = gender;
+	}
+
+	public java.util.Date getBirthday() {
+		return birthday;
+	}
+
+	public void setBirthday(java.util.Date birthday) {
+		this.birthday = birthday;
 	}
 
 	public java.util.Date getCreatedTime() {
@@ -129,6 +142,10 @@ public class Student implements java.io.Serializable {
 		str.append(",");
 		str.append("\"gender\":\"");
 		str.append(gender);
+		str.append("\"");
+		str.append(",");
+		str.append("\"birthday\":\"");
+		str.append(birthday);
 		str.append("\"");
 		str.append(",");
 		str.append("\"createdTime\":\"");

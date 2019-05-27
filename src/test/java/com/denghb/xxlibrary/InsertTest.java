@@ -14,6 +14,7 @@ public class InsertTest extends BaseTest {
     public void insert1() {
         Student user = new Student();
         user.setName("张三");
+        user.setGender(1);
         db.insert(user);
 
     }
