@@ -1,4 +1,4 @@
-package com.denghb.model;
+package com.denghb.xxlibrary.model.req;
 
 import com.denghb.eorm.page.EPageReq;
 
@@ -6,7 +6,7 @@ import com.denghb.eorm.page.EPageReq;
  * @Auther: denghb
  * @Date: 2019-05-21 23:57
  */
-public class Pager extends EPageReq {
+public class StudentPageReq extends EPageReq {
 
     private String name;
 

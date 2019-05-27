@@ -1,9 +1,9 @@
-package com.denghb.test;
+package com.denghb.xxlibrary;
 
 import com.alibaba.fastjson.JSON;
 import com.denghb.eorm.page.EPageRes;
-import com.denghb.model.Pager;
-import com.denghb.model.User;
+import com.denghb.xxlibrary.domain.Student;
+import com.denghb.xxlibrary.model.req.StudentPageReq;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -16,7 +16,7 @@ public class SelectPageTest extends BaseTest {
 
     @Test
     public void selectPage1() {
-        Pager p = new Pager();
+        StudentPageReq p = new StudentPageReq();
         System.out.println(JSON.toJSON(p));
         p.setAsc(Arrays.asList("name"));
         p.setDesc(Arrays.asList("age"));
@@ -30,7 +30,7 @@ public class SelectPageTest extends BaseTest {
 
 
         System.out.println(JSON.toJSON(p));
-        EPageRes<User> res = db.selectPage(User.class, sql, p);
+        EPageRes<Student> res = db.selectPage(Student.class, sql, p);
         System.out.println(res);
     }
 }

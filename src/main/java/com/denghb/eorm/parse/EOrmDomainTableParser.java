@@ -9,8 +9,8 @@ import com.denghb.eorm.parse.domain.Table;
 import com.denghb.eorm.utils.ReflectUtils;
 
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -31,7 +31,7 @@ public class EOrmDomainTableParser {
         table.setName(getTableName(clazz));
 
         //
-        List<Field> fields = ReflectUtils.getFields(clazz);
+        Set<Field> fields = ReflectUtils.getFields(clazz);
         for (Field field : fields) {
 
             EColumn ecolumn = field.getAnnotation(EColumn.class);

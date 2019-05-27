@@ -1,6 +1,6 @@
-package com.denghb.test;
+package com.denghb.xxlibrary;
 
-import com.denghb.model.User;
+import com.denghb.xxlibrary.domain.Student;
 import org.junit.Test;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,10 +14,10 @@ public class DeleteByIdTest extends BaseTest {
     @Test
     public void deleteById() {
 
-        User user = new User();
-        user.setId(11111);
-        db.insert(user);
+        Student student = new Student();
+        student.setId(11111L);
+        db.insert(student);
 
-        db.deleteById(user);
+        db.deleteById(student);
     }
 }
