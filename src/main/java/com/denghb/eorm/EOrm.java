@@ -1,6 +1,5 @@
 package com.denghb.eorm;
 
-import com.denghb.eorm.page.EPageReq;
 import com.denghb.eorm.page.EPageRes;
 
 import java.util.List;
@@ -96,6 +95,6 @@ public interface EOrm {
      * @param <T>
      * @return EPageRes
      */
-    <T> EPageRes<T> selectPage(Class<T> clazz, String sql, EPageReq pageReq);
+    <T> EPageRes<T> selectPage(Class<T> clazz, String sql, Object pageReq);
 
 }

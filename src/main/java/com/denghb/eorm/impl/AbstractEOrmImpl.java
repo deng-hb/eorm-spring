@@ -63,6 +63,9 @@ public abstract class AbstractEOrmImpl implements EOrm {
         if (sql.contains(":")) {// namedParameter
             Map<String, Object> params = null;
             Object object = args[0];
+            if (null == object) {
+                throw new EOrmException("args is not null");
+            }
             if (object instanceof Map) {
                 params = (Map<String, Object>) object;
             } else {

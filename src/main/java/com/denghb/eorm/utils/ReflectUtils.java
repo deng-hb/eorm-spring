@@ -100,6 +100,9 @@ public class ReflectUtils {
         if (obj == null) {
             return null;
         }
+        if (obj instanceof Map) {
+            return (Map)obj;
+        }
 
         try {
             Map<String, Object> map = new HashMap<String, Object>();

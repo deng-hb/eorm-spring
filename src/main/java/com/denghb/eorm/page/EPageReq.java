@@ -4,6 +4,8 @@ package com.denghb.eorm.page;
 import java.util.List;
 
 /**
+ * Simple
+ *
  * @Auther: denghb
  * @Date: 2019-05-25 20:17
  */
@@ -31,10 +33,6 @@ public class EPageReq implements java.io.Serializable {
 
     public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
-    }
-
-    public int getPageStart() {
-        return (page - 1) * pageSize;
     }
 
     public List<String> getDesc() {
