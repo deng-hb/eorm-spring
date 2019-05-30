@@ -4,6 +4,9 @@ import com.denghb.eorm.utils.ReflectUtils;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,6 +51,34 @@ public class EOrmQueryTemplateParser {
                     el.append(c);
                 }
                 append = _expressionParser.parseExpression(el.toString()).getValue(ctx, Boolean.class);
+            } else if ('#' == c && 'i' == sqlTemplate.charAt(i + 1) && 'f' == sqlTemplate.charAt(i + 2)) {
+                // #if ( )
+                i += 3;
+                append = false;
+                StringBuilder name = new StringBuilder();
+                for (; i < sqlTemplate.length(); i++) {
+                    c = sqlTemplate.charAt(i);
+                    if (')' == c) {
+                        break;
+                    }
+                    if ('(' != c && ' ' != c) {
+                        name.append(c);
+                    }
+                }
+                Object object = params.get(name.toString());
+                if (null != object) {
+                    if (object instanceof Boolean) {
+                        append = (Boolean) object;
+                    } else if (object instanceof List) {
+                        append = !((Collection) object).isEmpty();
+                    } else if (object instanceof CharSequence) {
+                        append = String.valueOf(object).trim().length() > 0;
+                    } else if (object instanceof Number) {
+                        append = true;
+                    } else if (object instanceof Date) {
+                        append = true;
+                    }
+                }
             } else if ('#' == c && 'e' == sqlTemplate.charAt(i + 1) && 'n' == sqlTemplate.charAt(i + 2)
                     && 'd' == sqlTemplate.charAt(i + 3)) {
                 // #end
