@@ -80,7 +80,7 @@ public abstract class AbstractEOrmImpl implements EOrm {
             }
         } else {
             outLog(sql, args);
-            if (0 == args.length) {
+            if (0 == args.length || !sql.contains("?")) {
                 if (ReflectUtils.isSingleClass(clazz)) {
                     list = jdbcTemplate.queryForList(sql, clazz);
                 } else {

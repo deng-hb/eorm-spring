@@ -1,6 +1,5 @@
 package com.denghb.eorm.parse;
 
-import com.denghb.eorm.utils.ReflectUtils;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
@@ -31,9 +30,11 @@ public class EOrmQueryTemplateParser {
         if (!sqlTemplate.contains("#")) {
             return sqlTemplate;
         }
-        StandardEvaluationContext ctx = new StandardEvaluationContext();
-        ctx.setVariables(params);
-
+        StandardEvaluationContext ctx = null;
+        if (sqlTemplate.contains("#{")) {
+            ctx = new StandardEvaluationContext();
+            ctx.setVariables(params);
+        }
         StringBuilder sql = new StringBuilder();
         boolean append = true;
         for (int i = 0; i < sqlTemplate.length(); i++) {
@@ -92,10 +93,4 @@ public class EOrmQueryTemplateParser {
 
     }
 
-    public static String parse(String sqlTemplate, Object object) {
-        if (ReflectUtils.isSingleClass(object.getClass())) {
-            return sqlTemplate;
-        }
-        return parse(sqlTemplate, ReflectUtils.objectToMap(object));
-    }
 }
