@@ -4,6 +4,7 @@ package com.denghb.eorm.utils;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -11,14 +12,17 @@ import java.util.*;
  */
 public class ReflectUtils {
 
+    private static Map<String, Set<Field>> FIELD_CACHE = new ConcurrentHashMap<String, Set<Field>>();
+
     /**
      * 获得实体类的所有属性（该方法递归的获取当前类及父类中声明的字段。最终结果以list形式返回）
      */
     public static Set<Field> getFields(Class<?> clazz) {
-        Set<Field> fields = new HashSet<>();
-        if (clazz == null) {
+        Set<Field> fields = FIELD_CACHE.get(clazz.getName());
+        if (null != fields) {
             return fields;
         }
+        fields = new HashSet<>();
         Field[] classFields = clazz.getDeclaredFields();
         for (Field field : classFields) {
             int mod = field.getModifiers();
@@ -101,7 +105,7 @@ public class ReflectUtils {
             return null;
         }
         if (obj instanceof Map) {
-            return (Map)obj;
+            return (Map) obj;
         }
 
         try {
