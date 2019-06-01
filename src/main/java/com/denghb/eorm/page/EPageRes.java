@@ -1,6 +1,8 @@
 package com.denghb.eorm.page;
 
 
+import io.swagger.annotations.ApiModelProperty;
+
 import java.util.List;
 
 /**
@@ -9,8 +11,10 @@ import java.util.List;
  */
 public class EPageRes<T> implements java.io.Serializable {
 
+    @ApiModelProperty("列表")
     private List<T> list;
 
+    @ApiModelProperty("总数")
     private long total;
 
     public EPageRes() {

@@ -1,6 +1,8 @@
 package com.denghb.eorm.page;
 
 
+import io.swagger.annotations.ApiModelProperty;
+
 import java.util.List;
 
 /**
@@ -11,12 +13,16 @@ import java.util.List;
  */
 public class EPageReq implements java.io.Serializable {
 
+    @ApiModelProperty(value = "页码", example = "1")
     private int page = 1;
 
-    private int pageSize = 20;
+    @ApiModelProperty(value = "每页数量", example = "10")
+    private int pageSize = 10;
 
+    @ApiModelProperty(value = "排序降序字段", hidden = true)
     private List<String> desc;
 
+    @ApiModelProperty(value = "排序升序字段", hidden = true)
     private List<String> asc;
 
     public int getPage() {
