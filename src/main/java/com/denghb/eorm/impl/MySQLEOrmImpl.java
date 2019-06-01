@@ -53,7 +53,7 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
         StringBuilder dsb = new StringBuilder();
         Object descObject = params.get("desc");
         if (null != descObject && descObject instanceof List) {
-            List<String> desc = (List<String>) ascObject;
+            List<String> desc = (List<String>) descObject;
             if (null != desc && !desc.isEmpty()) {
                 if (0 < asb.length()) {
                     asb.append(',');
