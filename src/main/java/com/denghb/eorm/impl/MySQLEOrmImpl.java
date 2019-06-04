@@ -1,6 +1,7 @@
 package com.denghb.eorm.impl;
 
 import com.denghb.eorm.EOrm;
+import com.denghb.eorm.EOrmException;
 import com.denghb.eorm.page.EPageRes;
 import com.denghb.eorm.utils.ReflectUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -37,13 +38,13 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
         if (null != ascObject && ascObject instanceof List) {
 
             List<String> asc = (List<String>) ascObject;
-            if (null != asc && !asc.isEmpty()) {
+            if (!asc.isEmpty()) {
                 for (String column : asc) {
                     if (0 < asb.length()) {
                         asb.append(',');
                     }
                     asb.append('`');
-                    asb.append(column.replaceAll(" ", ""));
+                    asb.append(checkColumn(column));
                     asb.append('`');
                 }
                 asb.append(" asc");
@@ -54,7 +55,7 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
         Object descObject = params.get("desc");
         if (null != descObject && descObject instanceof List) {
             List<String> desc = (List<String>) descObject;
-            if (null != desc && !desc.isEmpty()) {
+            if (!desc.isEmpty()) {
                 if (0 < asb.length()) {
                     asb.append(',');
                 }
@@ -63,7 +64,7 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
                         dsb.append(',');
                     }
                     dsb.append('`');
-                    dsb.append(column.replaceAll(" ", ""));
+                    dsb.append(checkColumn(column));
                     dsb.append('`');
                 }
                 dsb.append(" desc");
@@ -91,4 +92,12 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
         return res;
     }
 
+    // TODO
+    private String checkColumn(String column) {
+        String newColumn = column.replaceAll(" ", "");
+        if (newColumn.contains("(") || newColumn.contains("*")) {
+            throw new EOrmException();
+        }
+        return newColumn;
+    }
 }
