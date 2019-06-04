@@ -43,7 +43,7 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
                         asb.append(',');
                     }
                     asb.append('`');
-                    asb.append(column);
+                    asb.append(column.replaceAll(" ", ""));
                     asb.append('`');
                 }
                 asb.append(" asc");
@@ -63,7 +63,7 @@ public class MySQLEOrmImpl extends AbstractEOrmImpl implements EOrm {
                         dsb.append(',');
                     }
                     dsb.append('`');
-                    dsb.append(column);
+                    dsb.append(column.replaceAll(" ", ""));
                     dsb.append('`');
                 }
                 dsb.append(" desc");
