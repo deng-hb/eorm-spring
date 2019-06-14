@@ -29,6 +29,13 @@ public class UpdateByIdTest extends BaseTest {
     @Test
     public void insert2() {
 
+        try {
+
+            db.deleteById(Student.class, 2);
+        } catch (Exception e) {
+
+        }
+
         Student user = new Student();
         user.setId(2L);
         user.setName("张三");

@@ -1,11 +1,11 @@
-package com.denghb.eorm.parse;
+package com.denghb.eorm.support;
 
 
 import com.denghb.eorm.EOrmException;
 import com.denghb.eorm.annotation.EColumn;
 import com.denghb.eorm.annotation.ETable;
-import com.denghb.eorm.parse.domain.Column;
-import com.denghb.eorm.parse.domain.Table;
+import com.denghb.eorm.support.domain.Column;
+import com.denghb.eorm.support.domain.Table;
 import com.denghb.eorm.utils.ReflectUtils;
 
 import java.lang.reflect.Field;
@@ -17,11 +17,11 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 支持使用Annotation标注表结构
  */
-public class EOrmDomainTableParser {
+public class EOrmTableParser {
 
     private static final Map<String, Table> DOMAIN_TABLE_CACHE = new ConcurrentHashMap<String, Table>();
 
-    public static Table init(Class clazz) {
+    public static Table load(Class clazz) {
         String key = clazz.getName();
         Table table = DOMAIN_TABLE_CACHE.get(key);
         if (null != table) {
@@ -34,23 +34,26 @@ public class EOrmDomainTableParser {
         Set<Field> fields = ReflectUtils.getFields(clazz);
         for (Field field : fields) {
 
-            EColumn ecolumn = field.getAnnotation(EColumn.class);
-            if (null == ecolumn) {
+            EColumn a = field.getAnnotation(EColumn.class);
+            if (null == a) {
                 continue;
             }
-            boolean primaryKey = ecolumn.primaryKey();
+            boolean primaryKey = a.primaryKey();
             if (primaryKey) {
-                table.getPkColumns().add(new Column(ecolumn.name(), primaryKey, field));
+                if (null != table.getPrimaryKeyColumn()) {
+                    throw new EOrmException("exist primary key");
+                }
+                table.setPrimaryKeyColumn(new Column(a.name(), field, a.autoIncrement(), a.allowNull(), a.length(), a.comment()));
+            } else {
+                table.getColumns().add(new Column(a.name(), field, a.autoIncrement(), a.allowNull(), a.length(), a.comment()));
             }
 
-            table.getColumns().add(new Column(ecolumn.name(), primaryKey, field));
         }
-
+        if (null == table.getPrimaryKeyColumn()) {
+            throw new EOrmException("not find @EColumn primaryKey = true");
+        }
         if (table.getColumns().isEmpty()) {
-            throw new EOrmException("not found @EColumn");
-        }
-        if (table.getPkColumns().isEmpty()) {
-            throw new EOrmException("not found @EColumn primaryKey = true");
+            throw new EOrmException("not find @EColumn");
         }
         DOMAIN_TABLE_CACHE.put(key, table);
         return table;
@@ -78,4 +81,12 @@ public class EOrmDomainTableParser {
         return sb.toString();
     }
 
+    public static void validate(Column column, Object value) {
+        if (!column.isAllowNull() && null == value) {
+            throw new EOrmException("column [" + column.getName() + "] not null");
+        }
+        if (0 < column.getLength() && String.valueOf(value).length() > column.getLength()) {
+            throw new EOrmException("column [" + column.getName() + "] length <= " + column.getLength());
+        }
+    }
 }

@@ -1,4 +1,4 @@
-package com.denghb.eorm.parse.domain;
+package com.denghb.eorm.support.domain;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +14,9 @@ public class Table {
     private String name;
 
     /**
-     * 主键字段
+     * 主键字（不考虑复合主键）
      */
-    private List<Column> pkColumns = new ArrayList<Column>();
+    private Column primaryKeyColumn;
 
     /**
      * 所有的列
@@ -31,12 +31,12 @@ public class Table {
         this.name = name;
     }
 
-    public List<Column> getPkColumns() {
-        return pkColumns;
+    public Column getPrimaryKeyColumn() {
+        return primaryKeyColumn;
     }
 
-    public void setPkColumns(List<Column> pkColumns) {
-        this.pkColumns = pkColumns;
+    public void setPrimaryKeyColumn(Column primaryKeyColumn) {
+        this.primaryKeyColumn = primaryKeyColumn;
     }
 
     public List<Column> getColumns() {

@@ -6,6 +6,8 @@ import com.denghb.xxlibrary.domain.Student;
 import com.denghb.xxlibrary.model.req.StudentPageReq;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 /**
  * @Auther: denghb
  * @Date: 2019-05-26 02:15
@@ -24,12 +26,17 @@ public class SelectPageTest extends BaseTest {
             #{ null != #name && #name != '' }
                 and name like :name
             #end
+            #if (name)
+                and name like :name
+            #end
 
         }*/;
 
+        p.setSorts(Arrays.asList("ids"));
+        p.setDesc(Arrays.asList("id"));
 
         System.out.println(JSON.toJSON(p));
-        EPageRes<Student> res = db.selectPage(Student.class, sql,p);
+        EPageRes<Student> res = db.selectPage(Student.class, sql, p);
         System.out.println(res);
     }
 }

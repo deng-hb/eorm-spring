@@ -1,5 +1,6 @@
 package com.denghb.eorm;
 
+import com.denghb.eorm.page.EPageReq;
 import com.denghb.eorm.page.EPageRes;
 
 import java.util.List;
@@ -27,7 +28,7 @@ public interface EOrm {
      * @param sql
      * @param args
      * @param <T>
-     * @return List
+     * @return List<T>
      */
     <T> List<T> select(Class<T> clazz, String sql, Object... args);
 
@@ -55,15 +56,14 @@ public interface EOrm {
      */
     <T> void deleteById(T domain);
 
-
     /**
-     * 删除多个主键的对象
+     * 删除多个主键的类型
      *
      * @param clazz
-     * @param ids
+     * @param id
      * @param <T>
      */
-    <T> void deleteById(Class<T> clazz, Object... ids);
+    <T> void deleteById(Class<T> clazz, Object id);
 
     /**
      * 查询一个对象
@@ -80,11 +80,11 @@ public interface EOrm {
      * 按主键查询一条记录
      *
      * @param clazz
-     * @param ids
+     * @param id
      * @param <T>
      * @return T
      */
-    <T> T selectById(Class<T> clazz, Object... ids);
+    <T> T selectById(Class<T> clazz, Object id);
 
     /**
      * 分页查询
@@ -93,8 +93,8 @@ public interface EOrm {
      * @param sql
      * @param pageReq
      * @param <T>
-     * @return EPageRes
+     * @return EPageRes<T>
      */
-    <T> EPageRes<T> selectPage(Class<T> clazz, String sql, Object pageReq);
+    <T> EPageRes<T> selectPage(Class<T> clazz, String sql, EPageReq pageReq);
 
 }

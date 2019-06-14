@@ -32,7 +32,7 @@ public class ReadRecord implements java.io.Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	/** ID */
-	@EColumn(name="id", primaryKey = true)
+	@EColumn(name="id", primaryKey = true, autoIncrement = true)
 	private Integer id;
 	
 	/** 学生ID */

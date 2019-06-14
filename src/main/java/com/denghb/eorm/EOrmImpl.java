@@ -1,11 +1,11 @@
-package com.denghb.eorm.impl;
+package com.denghb.eorm;
 
-import com.denghb.eorm.EOrm;
-import com.denghb.eorm.EOrmException;
-import com.denghb.eorm.parse.EOrmDomainTableParser;
-import com.denghb.eorm.parse.EOrmQueryTemplateParser;
-import com.denghb.eorm.parse.domain.Column;
-import com.denghb.eorm.parse.domain.Table;
+import com.denghb.eorm.page.EPageReq;
+import com.denghb.eorm.page.EPageRes;
+import com.denghb.eorm.support.EOrmTableParser;
+import com.denghb.eorm.support.EOrmQueryTemplateParser;
+import com.denghb.eorm.support.domain.Column;
+import com.denghb.eorm.support.domain.Table;
 import com.denghb.eorm.utils.ReflectUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -25,21 +26,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 抽象实现
- * insert
- * batchInsert
- * list
- * doTx
+ * 基本实现
  */
-public abstract class AbstractEOrmImpl implements EOrm {
+public class EOrmImpl implements EOrm {
 
-    protected Log log = LogFactory.getLog(this.getClass());
+    public Log log = LogFactory.getLog(this.getClass());
 
-    protected JdbcTemplate jdbcTemplate;
+    public JdbcTemplate jdbcTemplate;
 
-    protected NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    public NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
-    public AbstractEOrmImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
+    public EOrmImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
         this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
     }
@@ -49,6 +46,11 @@ public abstract class AbstractEOrmImpl implements EOrm {
             log.debug("Params:" + Arrays.toString(args));
             log.debug("Execute SQL:" + sql);
         }
+    }
+
+    private void outErrorLog(String sql, Object... args) {
+        log.error("Params:" + Arrays.toString(args));
+        log.error("Execute SQL:" + sql);
     }
 
     @Override
@@ -100,23 +102,29 @@ public abstract class AbstractEOrmImpl implements EOrm {
     @Override
     public <T> void insert(T domain) {
 
-        Table table = EOrmDomainTableParser.init(domain.getClass());
+        Table table = EOrmTableParser.load(domain.getClass());
 
         StringBuilder csb = new StringBuilder();
-        final List<Object> params = new ArrayList<>();
-
-        String pkColumnName = null;
-        Object pkValue = null;
-        Field pkField = null;
         StringBuilder vsb = new StringBuilder();
+        final List<Object> params = new ArrayList<Object>();
+
+        final Column primaryKeyColumn = table.getPrimaryKeyColumn();
+        Field primaryKeyFiled = primaryKeyColumn.getField();
+        Object primaryKeyValue = ReflectUtils.getFieldValue(primaryKeyFiled, domain);
+
+        if (null != primaryKeyValue) {
+            csb.append('`');
+            csb.append(primaryKeyColumn.getName());
+            csb.append('`');
+
+            vsb.append('?');
+            params.add(primaryKeyValue);
+        }
+
         for (Column column : table.getColumns()) {
-            // 排除null
             Object value = ReflectUtils.getFieldValue(column.getField(), domain);
-            if (column.getPrimaryKey()) {
-                pkColumnName = column.getName();
-                pkValue = value;
-                pkField = column.getField();
-            }
+            EOrmTableParser.validate(column, value);
+            // 排除null
             if (null == value) {
                 continue;
             }
@@ -131,6 +139,7 @@ public abstract class AbstractEOrmImpl implements EOrm {
             vsb.append('?');
             params.add(value);
         }
+
         StringBuilder sb = new StringBuilder();
         sb.append("insert into ");
         sb.append(table.getName());
@@ -143,16 +152,15 @@ public abstract class AbstractEOrmImpl implements EOrm {
         final String sql = sb.toString();
 
         int res = 0;
-        final String fpkColumnName = pkColumnName;
         final Object[] args = params.toArray();
-        // 只有一个主键而且是空的表示自动生成的
-        if (1 == table.getPkColumns().size() && null == pkValue) {
-            GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        // 主键是否自动赋值
+        if (primaryKeyColumn.isAutoIncrement() && null == primaryKeyValue) {
+            KeyHolder keyHolder = new GeneratedKeyHolder();
             outLog(sql, args);
             res = jdbcTemplate.update(new PreparedStatementCreator() {
                 @Override
                 public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-                    PreparedStatement ps = connection.prepareStatement(sql, new String[]{fpkColumnName});
+                    PreparedStatement ps = connection.prepareStatement(sql, new String[]{primaryKeyColumn.getName()});
                     for (int i = 0; i < params.size(); i++) {
                         Object obj = params.get(i);
                         ps.setObject(i + 1, obj);
@@ -160,55 +168,48 @@ public abstract class AbstractEOrmImpl implements EOrm {
                     return ps;
                 }
             }, keyHolder);
+
             Number number = keyHolder.getKey();
-            Class type = pkField.getType();
+            Class type = primaryKeyFiled.getType();
             if (type == Integer.class || type == int.class) {
-                ReflectUtils.setFieldValue(pkField, domain, number.intValue());
+                ReflectUtils.setFieldValue(primaryKeyFiled, domain, number.intValue());
             } else if (type == Long.class || type == long.class) {
-                ReflectUtils.setFieldValue(pkField, domain, number.longValue());
+                ReflectUtils.setFieldValue(primaryKeyFiled, domain, number.longValue());
             } else {
-                throw new EOrmException();
+                throw new EOrmException("insert set primaryKey[" + primaryKeyColumn.getName() + "] fail");
             }
         } else {
             res = execute(sql, args);
         }
 
         if (1 != res) {
-            throw new EOrmException();
+            outErrorLog(sql, args);
+            throw new EOrmException("insert fail");
         }
     }
 
     @Override
     public <T> void updateById(T domain) {
-        Table table = EOrmDomainTableParser.init(domain.getClass());
+        Table table = EOrmTableParser.load(domain.getClass());
         List<Object> values = new ArrayList<Object>();
-        List<Object> params = new ArrayList<Object>();
+
+        Column primaryKeyColumn = table.getPrimaryKeyColumn();
+        Object primaryKeyValue = ReflectUtils.getFieldValue(primaryKeyColumn.getField(), domain);
 
         StringBuilder ssb = new StringBuilder();
-        StringBuilder wsb = new StringBuilder();
         for (Column column : table.getColumns()) {
             Object value = ReflectUtils.getFieldValue(column.getField(), domain);
+            EOrmTableParser.validate(column, value);
             if (null == value) {
                 continue;
             }
-            if (column.getPrimaryKey()) {
-                if (wsb.length() > 0) {
-                    wsb.append(" and ");
-                }
-                wsb.append("`");
-                wsb.append(column.getName());
-                wsb.append("` = ?");
-                params.add(value);
-            } else {
-                if (ssb.length() > 0) {
-                    ssb.append(", ");
-                }
-                ssb.append("`");
-                ssb.append(column.getName());
-                ssb.append("` = ?");
-                values.add(value);
+            if (ssb.length() > 0) {
+                ssb.append(", ");
             }
-
+            ssb.append("`");
+            ssb.append(column.getName());
+            ssb.append("` = ?");
+            values.add(value);
         }
 
 
@@ -217,74 +218,63 @@ public abstract class AbstractEOrmImpl implements EOrm {
         sb.append(" set ");
         sb.append(ssb);
         sb.append(" where ");
-        sb.append(wsb);
+        sb.append("`");
+        sb.append(primaryKeyColumn.getName());
+        sb.append("` = ?");
+        values.add(primaryKeyValue);
 
         String sql = sb.toString();
-        values.addAll(params);
-        int res = this.execute(sql, values.toArray());
+        final Object[] args = values.toArray();
+        int res = this.execute(sql, args);
 
         if (1 != res) {
-            throw new EOrmException();
+            outErrorLog(sql, args);
+            throw new EOrmException("updateById fail");
         }
     }
 
     @Override
     public <T> void deleteById(T domain) {
-        Table table = EOrmDomainTableParser.init(domain.getClass());
-        List<Object> params = new ArrayList<Object>();
+        Table table = EOrmTableParser.load(domain.getClass());
 
-        StringBuilder wsb = new StringBuilder();
-        for (Column column : table.getPkColumns()) {
-            Object value = ReflectUtils.getFieldValue(column.getField(), domain);
-            if (null == value) {
-                continue;
-            }
-            if (wsb.length() > 0) {
-                wsb.append(" and ");
-            }
-            wsb.append("`");
-            wsb.append(column.getName());
-            wsb.append("` = ?");
+        Column primaryKeyColumn = table.getPrimaryKeyColumn();
+        Object primaryKeyValue = ReflectUtils.getFieldValue(primaryKeyColumn.getField(), domain);
 
-            params.add(value);
-        }
         StringBuilder sb = new StringBuilder("delete from ");
         sb.append(table.getName());
         sb.append(" where ");
+        sb.append("`");
+        sb.append(primaryKeyColumn.getName());
+        sb.append("` = ?");
 
-        sb.append(wsb);
         String sql = sb.toString();
-        int res = this.execute(sql, params.toArray());
+        int res = this.execute(sql, primaryKeyValue);
 
         if (1 != res) {
-            throw new EOrmException();
+            outErrorLog(sql, primaryKeyValue);
+            throw new EOrmException("deleteById fail");
         }
     }
 
     @Override
-    public <T> void deleteById(Class<T> clazz, Object... ids) {
-        Table table = EOrmDomainTableParser.init(clazz);
+    public <T> void deleteById(Class<T> clazz, Object id) {
+        Table table = EOrmTableParser.load(clazz);
 
-        StringBuilder wsb = new StringBuilder();
-        for (Column column : table.getPkColumns()) {
-            if (wsb.length() > 0) {
-                wsb.append(" and ");
-            }
-            wsb.append("`");
-            wsb.append(column.getName());
-            wsb.append("` = ?");
-        }
+        Column primaryKeyColumn = table.getPrimaryKeyColumn();
 
         StringBuilder sb = new StringBuilder("delete from ");
         sb.append(table.getName());
         sb.append(" where ");
-        sb.append(wsb);
+        sb.append("`");
+        sb.append(primaryKeyColumn.getName());
+        sb.append("` = ?");
 
         String sql = sb.toString();
-        int res = this.execute(sql, ids);
+        int res = this.execute(sql, id);
 
         if (1 != res) {
-            throw new EOrmException();
+            outErrorLog(sql, id);
+            throw new EOrmException("deleteById fail");
         }
     }
 
@@ -298,25 +288,24 @@ public abstract class AbstractEOrmImpl implements EOrm {
     }
 
     @Override
-    public <T> T selectById(Class<T> clazz, Object... args) {
+    public <T> T selectById(Class<T> clazz, Object id) {
         // 表名
-        Table table = EOrmDomainTableParser.init(clazz);
+        Table table = EOrmTableParser.load(clazz);
+
+        Column primaryKeyColumn = table.getPrimaryKeyColumn();
+
         StringBuilder sb = new StringBuilder("select * from ");
         sb.append(table.getName());
         sb.append(" where ");
+        sb.append("`");
+        sb.append(primaryKeyColumn.getName());
+        sb.append("` = ?");
 
-        // 主键名
-        StringBuilder wsb = new StringBuilder();
-        for (Column column : table.getPkColumns()) {
-            if (wsb.length() > 0) {
-                wsb.append(" and ");
-            }
-            wsb.append("`");
-            wsb.append(column.getName());
-            wsb.append("` = ?");
-        }
-        sb.append(wsb);
+        return selectOne(clazz, sb.toString(), id);
+    }
 
-        return selectOne(clazz, sb.toString(), args);
+    @Override
+    public <T> EPageRes<T> selectPage(Class<T> clazz, String sql, EPageReq pageReq) {
+        throw new EOrmException("custom implement");
     }
 }

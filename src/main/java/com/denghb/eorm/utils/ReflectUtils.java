@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ReflectUtils {
 
-    private static Map<String, Set<Field>> FIELD_CACHE = new ConcurrentHashMap<String, Set<Field>>();
+    private final static Map<String, Set<Field>> FIELD_CACHE = new ConcurrentHashMap<String, Set<Field>>();
 
     /**
      * 获得实体类的所有属性（该方法递归的获取当前类及父类中声明的字段。最终结果以list形式返回）

@@ -38,7 +38,7 @@
         <constructor-arg index="0" ref="dataSource" />
     </bean>
 
-    <bean id="eorm" class="com.denghb.eorm.impl.MySQLEOrmImpl">
+    <bean id="eorm" class="com.denghb.eorm.EOrmMySQLImpl">
         <constructor-arg index="0" ref="jdbcTemplate" />
         <constructor-arg index="1" ref="namedParameterJdbcTemplate" />
     </bean>
