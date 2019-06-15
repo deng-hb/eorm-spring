@@ -74,7 +74,7 @@ public class EOrmImpl implements EOrm {
                 params = ReflectUtils.objectToMap(object);
             }
             sql = EOrmQueryTemplateParser.parse(sql, params);
-            outLog(sql, args);
+            outLog(sql, params);
             if (ReflectUtils.isSingleClass(clazz)) {
                 list = namedParameterJdbcTemplate.queryForList(sql, params, clazz);
             } else {

@@ -31,6 +31,17 @@ public class EPageReq implements java.io.Serializable {
     @ApiModelProperty(value = "可排序字段", hidden = true)
     private List<String> sorts;
 
+    public EPageReq() {
+    }
+
+    public EPageReq(EPageReq req) {
+        this.asc = req.getAsc();
+        this.desc = req.getDesc();
+        this.sorts = req.getSorts();
+        this.page = req.getPage();
+        this.pageSize = req.getPageSize();
+    }
+
     /**
      * 计算
      *
@@ -82,5 +93,17 @@ public class EPageReq implements java.io.Serializable {
 
     public void setSorts(List<String> sorts) {
         this.sorts = sorts;
+    }
+
+    @Override
+    public String toString() {
+        return "EPageReq{" +
+                "page=" + page +
+                ", pageSize=" + pageSize +
+                ", pageStart=" + pageStart +
+                ", desc=" + desc +
+                ", asc=" + asc +
+                ", sorts=" + sorts +
+                '}';
     }
 }
