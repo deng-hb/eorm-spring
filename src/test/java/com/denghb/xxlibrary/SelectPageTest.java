@@ -1,6 +1,5 @@
 package com.denghb.xxlibrary;
 
-import com.alibaba.fastjson.JSON;
 import com.denghb.eorm.page.EPageRes;
 import com.denghb.xxlibrary.domain.Student;
 import com.denghb.xxlibrary.model.req.StudentPageReq;
@@ -18,12 +17,11 @@ public class SelectPageTest extends BaseTest {
     public void selectPage1() {
         StudentPageReq p = new StudentPageReq();
         p.setPageSize(3);
-        System.out.println(JSON.toJSON(p));
 //        p.setAsc(Arrays.asList("name"));
 //        p.setDesc(Arrays.asList("birthday"));
         String sql = ""/*{
             select * from student where 1 = 1
-            #{ null != #name && #name != '' }
+            #{null != #name && #name != ''}
                 and name like :name
             #end
             #if (name)
@@ -35,7 +33,6 @@ public class SelectPageTest extends BaseTest {
         p.setSorts(Arrays.asList("ids"));
         p.setDesc(Arrays.asList("id"));
 
-        System.out.println(JSON.toJSON(p));
         EPageRes<Student> res = db.selectPage(Student.class, sql, p);
         System.out.println(res);
     }
