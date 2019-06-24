@@ -1,4 +1,4 @@
-package com.denghb.xxlibrary;
+package com.denghb.xxlibrary.test;
 
 
 import com.denghb.xxlibrary.domain.Student;

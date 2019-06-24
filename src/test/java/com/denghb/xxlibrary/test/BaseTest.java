@@ -1,4 +1,4 @@
-package com.denghb.xxlibrary;
+package com.denghb.xxlibrary.test;
 
 import com.denghb.eorm.EOrm;
 import org.junit.Before;

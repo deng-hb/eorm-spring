@@ -176,7 +176,7 @@ public class EOrmImpl implements EOrm {
             } else if (type == Long.class || type == long.class) {
                 ReflectUtils.setFieldValue(primaryKeyFiled, domain, number.longValue());
             } else {
-                throw new EOrmException("insert set primaryKey[" + primaryKeyColumn.getName() + "] fail");
+                throw new EOrmException("insert set primaryKey[" + primaryKeyColumn.getName() + "] value fail");
             }
         } else {
             res = execute(sql, args);

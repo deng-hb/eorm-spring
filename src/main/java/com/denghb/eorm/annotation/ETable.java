@@ -19,4 +19,9 @@ public @interface ETable {
      */
     String database() default "";
 
+    /**
+     * 描述
+     */
+    String comment() default "";
+
 }

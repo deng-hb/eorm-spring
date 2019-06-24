@@ -37,7 +37,7 @@ public class Book implements java.io.Serializable {
      * 编号
      */
     @EColumn(name = "id", primaryKey = true, autoIncrement = true)
-    private String id;
+    private Integer id;
 
     /**
      * 书名
@@ -88,11 +88,11 @@ public class Book implements java.io.Serializable {
     private Integer version;
 
 
-    public String getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
