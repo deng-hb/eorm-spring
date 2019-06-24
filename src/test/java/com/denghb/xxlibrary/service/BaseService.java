@@ -4,8 +4,7 @@ package com.denghb.xxlibrary.service;
 /**
  * custom service example
  *
- * @author  denghb
- * @date  2019-05-30 23:50
+ * @author denghb 2019-05-30 23:50
  */
 public interface BaseService<T> {
 

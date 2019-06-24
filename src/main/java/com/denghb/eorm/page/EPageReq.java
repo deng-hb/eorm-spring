@@ -8,8 +8,7 @@ import java.util.List;
 /**
  * Simple
  *
- * @Auther: denghb
- * @Date: 2019-05-25 20:17
+ * @author denghb 2019-05-25 20:17
  */
 public class EPageReq implements java.io.Serializable {
 

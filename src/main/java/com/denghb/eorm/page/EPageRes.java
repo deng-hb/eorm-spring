@@ -6,8 +6,7 @@ import io.swagger.annotations.ApiModelProperty;
 import java.util.List;
 
 /**
- * @Auther: denghb
- * @Date: 2019-05-25 20:17
+ * @author denghb 2019-05-25 20:17
  */
 public class EPageRes<T> implements java.io.Serializable {
 
