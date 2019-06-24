@@ -12,7 +12,10 @@ public class SelectOneTest extends BaseTest {
     @Test
     public void selectOne1() {
 
-        Student student = db.selectOne(Student.class, "select * from student ");
+        String sql = ""/*{
+        select * from student where id = ?
+        }*/;
+        Student student = db.selectOne(Student.class, sql, 1);
 
         System.out.println(student);
     }

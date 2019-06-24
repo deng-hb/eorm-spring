@@ -7,6 +7,18 @@ Easy ORM with Spring framework
 + Method `insert(obj)`,`updateById(obj)` ignore `null` value 
 + Only a single primary key is supported
 
+### Example
+```java
+ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
+EOrm db = ctx.getBean(EOrm.class);
+
+String sql = ""/*{
+select * from book where isbn = ?
+}*/;
+Book book = db.selectOne(Book.class, sql, "xxxx-xxxx-xxxx");
+
+```
+
 ### Core
 ```java
 
