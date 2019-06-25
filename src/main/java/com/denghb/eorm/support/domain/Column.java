@@ -34,17 +34,16 @@ public class Column {
     private int length;
 
     /**
+     * 默认值
+     */
+    private String defaultValue;
+
+    /**
      * 描述
      */
     private String comment;
 
-    public Column(String name, Field field, boolean autoIncrement, boolean allowNull, int length, String comment) {
-        this.name = name;
-        this.field = field;
-        this.autoIncrement = autoIncrement;
-        this.allowNull = allowNull;
-        this.length = length;
-        this.comment = comment;
+    public Column() {
     }
 
     public String getName() {
@@ -87,11 +86,32 @@ public class Column {
         this.length = length;
     }
 
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
     public String getComment() {
         return comment;
     }
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    @Override
+    public String toString() {
+        return "Column{" +
+                "name='" + name + '\'' +
+                ", field=" + field +
+                ", autoIncrement=" + autoIncrement +
+                ", allowNull=" + allowNull +
+                ", length=" + length +
+                ", defaultValue='" + defaultValue + '\'' +
+                ", comment='" + comment + '\'' +
+                '}';
     }
 }

@@ -34,18 +34,18 @@ public class EOrmTableParser {
         Set<Field> fields = ReflectUtils.getFields(clazz);
         for (Field field : fields) {
 
-            EColumn a = field.getAnnotation(EColumn.class);
-            if (null == a) {
+            EColumn column = field.getAnnotation(EColumn.class);
+            if (null == column) {
                 continue;
             }
-            boolean primaryKey = a.primaryKey();
+            boolean primaryKey = column.primaryKey();
             if (primaryKey) {
                 if (null != table.getPrimaryKeyColumn()) {
                     throw new EOrmException("exist primary key");
                 }
-                table.setPrimaryKeyColumn(new Column(a.name(), field, a.autoIncrement(), a.allowNull(), a.length(), a.comment()));
+                table.setPrimaryKeyColumn(buildColumn(column, field));
             } else {
-                table.getColumns().add(new Column(a.name(), field, a.autoIncrement(), a.allowNull(), a.length(), a.comment()));
+                table.getColumns().add(buildColumn(column, field));
             }
 
         }
@@ -57,6 +57,20 @@ public class EOrmTableParser {
         }
         DOMAIN_TABLE_CACHE.put(key, table);
         return table;
+    }
+
+    private static Column buildColumn(EColumn e, Field field) {
+        Column c = new Column();
+        c.setAllowNull(e.allowNull());
+        c.setAutoIncrement(e.autoIncrement());
+        c.setComment(e.comment());
+
+        c.setField(field);
+        c.setName(e.name());
+        c.setLength(e.length());
+
+        c.setDefaultValue(e.defaultValue());
+        return c;
     }
 
     private static <T> String getTableName(Class<T> clazz) {

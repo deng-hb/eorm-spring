@@ -38,6 +38,11 @@ public @interface EColumn {
     int length() default 0;
 
     /**
+     * 默认值
+     */
+    String defaultValue() default "";
+
+    /**
      * 描述
      */
     String comment() default "";

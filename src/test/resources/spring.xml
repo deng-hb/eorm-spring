@@ -43,8 +43,8 @@
         <constructor-arg index="1" ref="namedParameterJdbcTemplate" />
     </bean>
 
-    <bean id="baseService" class="com.denghb.xxlibrary.service.impl.BaseServiceImpl" />
+    <bean id="baseService" class="com.denghb.xxlibrary.base.impl.BaseServiceImpl" />
 
-    <bean id="bookService" class="com.denghb.xxlibrary.service.BookService" />
+    <bean id="bookService" class="com.denghb.xxlibrary.service.impl.BookServiceImpl" />
 
 </beans>
