@@ -30,8 +30,8 @@ public class SelectPageTest extends BaseTest {
 
         }*/;
 
-        p.setSorts(Arrays.asList("ids"));
-        p.setDesc(Arrays.asList("id"));
+        p.getSorts().addAll(Arrays.asList("id"));
+        p.getDesc().addAll(Arrays.asList("id"));
 
         EPageRes<Student> res = db.selectPage(Student.class, sql, p);
         System.out.println(res);

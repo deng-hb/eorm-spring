@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * MySQL 实现
@@ -37,7 +38,7 @@ public class EOrmMySQLImpl extends EOrmImpl implements EOrm {
     private String buildOrderBy(EPageReq pageReq) {
 
         //获取所有预置可排序字段
-        List<String> sorts = pageReq.getSorts();
+        Set<String> sorts = pageReq.getSorts();
         if (null == sorts || sorts.isEmpty()) {
             return "";
         }
@@ -45,7 +46,7 @@ public class EOrmMySQLImpl extends EOrmImpl implements EOrm {
 
         // asc append
         StringBuilder asb = new StringBuilder();
-        List<String> asc = pageReq.getAsc();
+        Set<String> asc = pageReq.getAsc();
         if (null != asc && !asc.isEmpty()) {
             for (String column : asc) {
                 if (!sorts.contains(column)) {
@@ -62,7 +63,7 @@ public class EOrmMySQLImpl extends EOrmImpl implements EOrm {
         }
 
         StringBuilder dsb = new StringBuilder();
-        List<String> desc = pageReq.getDesc();
+        Set<String> desc = pageReq.getDesc();
         if (null != desc && !desc.isEmpty()) {
             if (0 < asb.length()) {
                 asb.append(',');

@@ -3,7 +3,8 @@ package com.denghb.eorm.page;
 
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Simple
@@ -22,23 +23,15 @@ public class EPageReq implements java.io.Serializable {
     private int pageStart;
 
     @ApiModelProperty(value = "排序降序字段", hidden = true)
-    private List<String> desc;
+    private Set<String> desc = new HashSet<String>();
 
     @ApiModelProperty(value = "排序升序字段", hidden = true)
-    private List<String> asc;
+    private Set<String> asc = new HashSet<String>();
 
     @ApiModelProperty(value = "可排序字段", hidden = true)
-    private List<String> sorts;
+    private Set<String> sorts = new HashSet<String>();
 
     public EPageReq() {
-    }
-
-    public EPageReq(EPageReq req) {
-        this.asc = req.getAsc();
-        this.desc = req.getDesc();
-        this.sorts = req.getSorts();
-        this.page = req.getPage();
-        this.pageSize = req.getPageSize();
     }
 
     /**
@@ -70,27 +63,27 @@ public class EPageReq implements java.io.Serializable {
         this.pageStart = pageStart;
     }
 
-    public List<String> getDesc() {
+    public Set<String> getDesc() {
         return desc;
     }
 
-    public void setDesc(List<String> desc) {
+    public void setDesc(Set<String> desc) {
         this.desc = desc;
     }
 
-    public List<String> getAsc() {
+    public Set<String> getAsc() {
         return asc;
     }
 
-    public void setAsc(List<String> asc) {
+    public void setAsc(Set<String> asc) {
         this.asc = asc;
     }
 
-    public List<String> getSorts() {
+    public Set<String> getSorts() {
         return sorts;
     }
 
-    public void setSorts(List<String> sorts) {
+    public void setSorts(Set<String> sorts) {
         this.sorts = sorts;
     }
 
