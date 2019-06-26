@@ -66,9 +66,16 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         Column primaryKeyColumn = table.getPrimaryKeyColumn();
         Object primaryKeyValue = ReflectUtils.getFieldValue(primaryKeyColumn.getField(), domain);
 
+        // 版本号自动++
+        Object versionValue = null;
+
         StringBuilder ssb = new StringBuilder();
         for (Column column : table.getColumns()) {
             Object value = ReflectUtils.getFieldValue(column.getField(), domain);
+            if (null != value && "version".equals(column.getName())) {
+                versionValue = value;
+                continue;
+            }
             EOrmTableParser.validate(column, value);
             if (null == value) {
                 continue;
@@ -86,18 +93,23 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         sb.append(table.getName());
         sb.append(" set ");
         sb.append(ssb);
+        sb.append(", `version` = `version` + 1");
         sb.append(" where ");
         sb.append("`");
         sb.append(primaryKeyColumn.getName());
         sb.append("` = ?");
         values.add(primaryKeyValue);
         sb.append(" and `deleted` = 0 ");
+        if (null != versionValue) {
+            sb.append(" and `version` = ? ");
+            values.add(versionValue);
+        }
 
         String sql = sb.toString();
         final Object[] args = values.toArray();
         int res = db.execute(sql, args);
         if (1 != res) {
-            throw new EOrmException("change zero:" + domain);
+            throw new EOrmException("update fail");
         }
     }
 
@@ -113,7 +125,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         }
         int res = db.execute(sql, id);
         if (1 != res) {
-            throw new EOrmException("change zero:" + id);
+            throw new EOrmException("delete fail");
         }
     }
 

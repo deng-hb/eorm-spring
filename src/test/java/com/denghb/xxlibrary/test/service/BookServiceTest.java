@@ -46,6 +46,7 @@ public class BookServiceTest extends BaseTest {
         bookService.insert(book);
 
         book.setTitle("test updateById book2");
+        book.setVersion(0);
         bookService.updateById(book);
     }
 
