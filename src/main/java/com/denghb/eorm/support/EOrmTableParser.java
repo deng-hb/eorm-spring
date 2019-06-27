@@ -62,12 +62,11 @@ public class EOrmTableParser {
     private static Column buildColumn(EColumn e, Field field) {
         Column c = new Column();
         c.setAllowNull(e.allowNull());
-        c.setAutoIncrement(e.autoIncrement());
         c.setComment(e.comment());
 
         c.setField(field);
         c.setName(e.name());
-        c.setLength(e.length());
+        c.setCharMaxLength(e.charMaxLength());
 
         c.setDefaultValue(e.defaultValue());
         return c;
@@ -99,8 +98,8 @@ public class EOrmTableParser {
         if (!column.isAllowNull() && null == value) {
             throw new EOrmException("column [" + column.getName() + "] not null");
         }
-        if (0 < column.getLength() && String.valueOf(value).length() > column.getLength()) {
-            throw new EOrmException("column [" + column.getName() + "] length <= " + column.getLength());
+        if (0 < column.getCharMaxLength() && String.valueOf(value).length() > column.getCharMaxLength()) {
+            throw new EOrmException("column [" + column.getName() + "] length <= " + column.getCharMaxLength());
         }
     }
 }

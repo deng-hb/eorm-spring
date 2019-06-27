@@ -36,7 +36,7 @@ public class Book implements java.io.Serializable {
     /**
      * 编号
      */
-    @EColumn(name = "id", primaryKey = true, autoIncrement = true)
+    @EColumn(name = "id", primaryKey = true)
     private Integer id;
 
     /**

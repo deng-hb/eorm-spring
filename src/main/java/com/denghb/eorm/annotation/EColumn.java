@@ -23,11 +23,6 @@ public @interface EColumn {
     boolean primaryKey() default false;
 
     /**
-     * 是否自增
-     */
-    boolean autoIncrement() default false;
-
-    /**
      * 允许空值
      */
     boolean allowNull() default true;
@@ -35,7 +30,7 @@ public @interface EColumn {
     /**
      * 字符串长度
      */
-    int length() default 0;
+    int charMaxLength() default 0;
 
     /**
      * 默认值

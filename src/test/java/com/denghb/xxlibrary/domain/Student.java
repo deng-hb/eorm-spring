@@ -35,13 +35,13 @@ public class Student implements java.io.Serializable {
     /**
      * ID
      */
-    @EColumn(name = "id", primaryKey = true, autoIncrement = true)
+    @EColumn(name = "id", primaryKey = true)
     private Long id;
 
     /**
      * 姓名
      */
-    @EColumn(name = "name", length = 10)
+    @EColumn(name = "name", charMaxLength = 10)
     private String name;
 
     /**

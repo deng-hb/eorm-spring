@@ -19,11 +19,6 @@ public class Column {
     private Field field;
 
     /**
-     * 是否自增
-     */
-    private boolean autoIncrement;
-
-    /**
      * 允许空值
      */
     private boolean allowNull;
@@ -31,7 +26,7 @@ public class Column {
     /**
      * 字符串长度
      */
-    private int length;
+    private int charMaxLength;
 
     /**
      * 默认值
@@ -62,14 +57,6 @@ public class Column {
         this.field = field;
     }
 
-    public boolean isAutoIncrement() {
-        return autoIncrement;
-    }
-
-    public void setAutoIncrement(boolean autoIncrement) {
-        this.autoIncrement = autoIncrement;
-    }
-
     public boolean isAllowNull() {
         return allowNull;
     }
@@ -78,12 +65,12 @@ public class Column {
         this.allowNull = allowNull;
     }
 
-    public int getLength() {
-        return length;
+    public int getCharMaxLength() {
+        return charMaxLength;
     }
 
-    public void setLength(int length) {
-        this.length = length;
+    public void setCharMaxLength(int charMaxLength) {
+        this.charMaxLength = charMaxLength;
     }
 
     public String getDefaultValue() {
@@ -100,18 +87,5 @@ public class Column {
 
     public void setComment(String comment) {
         this.comment = comment;
-    }
-
-    @Override
-    public String toString() {
-        return "Column{" +
-                "name='" + name + '\'' +
-                ", field=" + field +
-                ", autoIncrement=" + autoIncrement +
-                ", allowNull=" + allowNull +
-                ", length=" + length +
-                ", defaultValue='" + defaultValue + '\'' +
-                ", comment='" + comment + '\'' +
-                '}';
     }
 }

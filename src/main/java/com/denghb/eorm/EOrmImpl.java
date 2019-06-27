@@ -154,7 +154,7 @@ public class EOrmImpl implements EOrm {
         int res = 0;
         final Object[] args = params.toArray();
         // 主键是否自动赋值
-        if (primaryKeyColumn.isAutoIncrement() && null == primaryKeyValue) {
+        if (null == primaryKeyValue && Number.class.isAssignableFrom(primaryKeyFiled.getType())) {
             KeyHolder keyHolder = new GeneratedKeyHolder();
             outLog(sql, args);
             res = jdbcTemplate.update(new PreparedStatementCreator() {
