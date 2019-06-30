@@ -22,7 +22,7 @@ public class ReflectUtils {
         if (null != fields) {
             return fields;
         }
-        fields = new HashSet<>();
+        fields = new HashSet<Field>();
         Field[] classFields = clazz.getDeclaredFields();
         for (Field field : classFields) {
             int mod = field.getModifiers();
