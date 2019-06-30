@@ -2,16 +2,20 @@ package com.denghb.eorm.impl;
 
 import com.denghb.eorm.Eorm;
 import com.denghb.eorm.EormException;
-import com.denghb.eorm.utils.EormUtils;
+import com.denghb.eorm.support.EormSupport;
+import com.denghb.eorm.support.model.Column;
+import com.denghb.eorm.support.model.Table;
+import com.denghb.eorm.utils.ReflectUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 抽象实现
@@ -26,151 +30,152 @@ public abstract class EormAbstractImpl implements Eorm {
 
     protected JdbcTemplate jdbcTemplate;
 
+    protected NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
     public EormAbstractImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public int execute(String sql, Object... args) {
+    public EormAbstractImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+    }
+
+    protected void outLog(String sql, Object... args) {
         if (log.isDebugEnabled()) {
             log.debug("Params:" + Arrays.toString(args));
             log.debug("Execute SQL:" + sql);
         }
+    }
+
+    protected void outErrorLog(String sql, Object... args) {
+        log.error("Params:" + Arrays.toString(args));
+        log.error("Execute SQL:" + sql);
+    }
+
+    @Override
+    public int execute(String sql, Object... args) {
+        outLog(sql, args);
         return jdbcTemplate.update(sql, args);
     }
 
-    private boolean isSingleClass(Class clazz) {
-        return clazz.isPrimitive() || Number.class.isAssignableFrom(clazz) || CharSequence.class.isAssignableFrom(clazz) || Date.class.isAssignableFrom(clazz);
-    }
-
+    @Override
     public <T> List<T> select(Class<T> clazz, String sql, Object... args) {
-
-        if (log.isDebugEnabled()) {
-            log.debug("Params:" + Arrays.toString(args));
-            log.debug("Query SQL:" + sql);
-        }
         List<T> list = null;
-
-        if (null == args || 0 == args.length || args[0] == null) {
-            if (isSingleClass(clazz)) {
-                list = jdbcTemplate.queryForList(sql, clazz);
+        if (sql.contains(":")) {// namedParameter
+            Map<String, Object> params = null;
+            Object object = args[0];
+            if (null == object) {
+                throw new EormException("args is not null");
+            }
+            if (object instanceof Map) {
+                params = (Map<String, Object>) object;
             } else {
-                list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(clazz));
+                params = ReflectUtils.objectToMap(object);
+            }
+            sql = EormSupport.parse(sql, params);
+            outLog(sql, params);
+            if (ReflectUtils.isSingleClass(clazz)) {
+                list = namedParameterJdbcTemplate.queryForList(sql, params, clazz);
+            } else {
+                list = namedParameterJdbcTemplate.query(sql, params, BeanPropertyRowMapper.newInstance(clazz));
             }
         } else {
-            if (isSingleClass(clazz)) {
-                list = jdbcTemplate.queryForList(sql, clazz, args);
+            outLog(sql, args);
+            if (0 == args.length || !sql.contains("?")) {
+                if (ReflectUtils.isSingleClass(clazz)) {
+                    list = jdbcTemplate.queryForList(sql, clazz);
+                } else {
+                    list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(clazz));
+                }
             } else {
-                list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(clazz), args);
+                if (ReflectUtils.isSingleClass(clazz)) {
+                    list = jdbcTemplate.queryForList(sql, clazz, args);
+                } else {
+                    list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(clazz), args);
+                }
             }
         }
         return list;
     }
 
+    @Override
     public <T> void update(T domain) {
+        Table table = EormSupport.load(domain.getClass());
+        List<Object> values = new ArrayList<Object>();
 
-        EormUtils.TableInfo table = EormUtils.getTableInfo(domain);
-        List<Object> params = new ArrayList<Object>();
-
-        List<EormUtils.Column> commonColumns = table.getCommonColumns();
         StringBuilder ssb = new StringBuilder();
-        for (int i = 0; i < commonColumns.size(); i++) {
-            EormUtils.Column column = commonColumns.get(i);
-
-            if (i > 0) {
+        for (Column column : table.getOtherColumns()) {
+            Object value = ReflectUtils.getFieldValue(column.getField(), domain);
+            if (null == value) {
+                continue;
+            }
+            if (ssb.length() > 0) {
                 ssb.append(", ");
             }
-
             ssb.append("`");
             ssb.append(column.getName());
             ssb.append("` = ?");
-
-            params.add(column.getValue());
+            values.add(value);
         }
 
-        List<EormUtils.Column> primaryKeyColumns = table.getPrimaryKeyColumns();
-        StringBuilder wsb = new StringBuilder();
-        for (int i = 0; i < primaryKeyColumns.size(); i++) {
-            EormUtils.Column column = primaryKeyColumns.get(i);
-            if (i > 0) {
-                wsb.append(" and ");
-            }
-            wsb.append("`");
-            wsb.append(column.getName());
-            wsb.append("` = ?");
-
-            params.add(column.getValue());
-        }
 
         StringBuilder sb = new StringBuilder("update ");
-        sb.append(table.getTableName());
+        sb.append(table.getName());
         sb.append(" set ");
         sb.append(ssb);
-        sb.append(" where ");
-        sb.append(wsb);
+        sb.append(EormSupport.loadWherePrimaryKey(table));
+
+        List<Column> pkColumns = table.getPkColumns();
+        for (Column column : pkColumns) {
+            Object value = ReflectUtils.getFieldValue(column.getField(), domain);
+            values.add(value);
+        }
 
         String sql = sb.toString();
-        int res = this.execute(sql, params.toArray());
+
+        Object[] args = values.toArray();
+        int res = this.execute(sql, args);
 
         if (1 != res) {
-            throw new EormException();
+            outErrorLog(sql, args);
+            throw new EormException("updateById fail");
         }
     }
 
+    @Override
     public <T> void delete(T domain) {
-        EormUtils.TableInfo table = EormUtils.getTableInfo(domain);
+        Table table = EormSupport.load(domain.getClass());
+
         List<Object> params = new ArrayList<Object>();
-
-        StringBuilder sb = new StringBuilder("delete from ");
-        sb.append(table.getTableName());
-        sb.append(" where ");
-
-        List<EormUtils.Column> primaryKeyColumns = table.getPrimaryKeyColumns();
-        for (int i = 0; i < primaryKeyColumns.size(); i++) {
-            EormUtils.Column column = primaryKeyColumns.get(i);
-            if (i > 0) {
-                sb.append(" and ");
-            }
-            sb.append("`");
-            sb.append(column.getName());
-            sb.append("` = ?");
-
-            params.add(column.getValue());
+        List<Column> pkColumns = table.getPkColumns();
+        for (Column column : pkColumns) {
+            Object value = ReflectUtils.getFieldValue(column.getField(), domain);
+            params.add(value);
         }
 
-        String sql = sb.toString();
-        int res = this.execute(sql, params.toArray());
-
-        if (1 != res) {
-            throw new EormException();
-        }
+        delete(domain.getClass(), params.toArray());
     }
 
+    @Override
     public <T> void delete(Class<T> clazz, Object... ids) {
+        Table table = EormSupport.load(clazz);
 
         StringBuilder sb = new StringBuilder("delete from ");
-        sb.append(EormUtils.getTableName(clazz));
-        sb.append(" where ");
-
-        List<String> primaryKeyNames = EormUtils.getPrimaryKeyNames(clazz);
-        for (int i = 0; i < primaryKeyNames.size(); i++) {
-            if (i > 0) {
-                sb.append(" and ");
-            }
-            sb.append("`");
-            sb.append(primaryKeyNames.get(i));
-            sb.append("` = ?");
-        }
+        sb.append(table.getName());
+        sb.append(EormSupport.loadWherePrimaryKey(table));
 
         String sql = sb.toString();
         int res = this.execute(sql, ids);
 
         if (1 != res) {
-            throw new EormException();
+            outErrorLog(sql, ids);
+            throw new EormException("deleteById fail");
         }
     }
 
+    @Override
     public <T> T selectOne(Class<T> clazz, String sql, Object... args) {
-
         List<T> list = select(clazz, sql, args);
         if (null != list && !list.isEmpty()) {
             return list.get(0);
@@ -178,26 +183,18 @@ public abstract class EormAbstractImpl implements Eorm {
         return null;
     }
 
-    public <T> T selectByPrimaryKey(Class<T> clazz, Object... args) {
-
+    @Override
+    public <T> T selectByPrimaryKey(Class<T> clazz, Object... ids) {
         // 表名
-        String tableName = EormUtils.getTableName(clazz);
-        StringBuilder sb = new StringBuilder("select * from ");
-        sb.append(tableName);
-        sb.append(" where ");
+        Table table = EormSupport.load(clazz);
 
-        // 主键名
-        List<String> primaryKeyNames = EormUtils.getPrimaryKeyNames(clazz);
-        for (int i = 0; i < primaryKeyNames.size(); i++) {
-            if (i > 0) {
-                sb.append(" and ");
-            }
-            sb.append("`");
-            sb.append(primaryKeyNames.get(i));
-            sb.append("` = ?");
-        }
+        StringBuilder sb = new StringBuilder("select ");
+        sb.append(EormSupport.loadAllColumnName(table));
+        sb.append(" from ");
+        sb.append(table.getName());
+        sb.append(EormSupport.loadWherePrimaryKey(table));
 
-        return selectOne(clazz, sb.toString(), args);
+        return selectOne(clazz, sb.toString(), ids);
     }
 
 }

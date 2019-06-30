@@ -2,9 +2,9 @@ package com.denghb.eorm.utils;
 
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.lang.reflect.Modifier;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -12,21 +12,30 @@ import java.util.List;
  */
 public class ReflectUtils {
 
+    private final static Map<String, Set<Field>> FIELD_CACHE = new ConcurrentHashMap<String, Set<Field>>();
+
     /**
      * 获得实体类的所有属性（该方法递归的获取当前类及父类中声明的字段。最终结果以list形式返回）
      */
-    public static List<Field> getFields(Class<?> clazz) {
-        if (clazz == null) {
-            return null;
+    public static Set<Field> getFields(Class<?> clazz) {
+        Set<Field> fields = FIELD_CACHE.get(clazz.getName());
+        if (null != fields) {
+            return fields;
         }
-
-        List<Field> fields = new ArrayList<Field>();
+        fields = new HashSet<>();
         Field[] classFields = clazz.getDeclaredFields();
-        fields.addAll(Arrays.asList(classFields));
+        for (Field field : classFields) {
+            int mod = field.getModifiers();
+            if (Modifier.isStatic(mod) || Modifier.isFinal(mod)) {
+                continue;
+            }
+            field.setAccessible(true);
+            fields.add(field);
+        }
 
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != Object.class) {
-            List<Field> superClassFields = getFields(superclass);
+            Set<Field> superClassFields = getFields(superclass);
             fields.addAll(superClassFields);
         }
         return fields;
@@ -60,5 +69,68 @@ public class ReflectUtils {
         }
     }
 
+    /**
+     * Map -> Object
+     *
+     * @param map
+     * @param clazz
+     * @return
+     */
+    public static Object mapToObject(Map<String, Object> map, Class<?> clazz) {
+        if (map == null)
+            return null;
 
+        try {
+            Object obj = clazz.newInstance();
+
+            Set<Field> fields = getFields(obj.getClass());
+            for (Field field : fields) {
+                field.setAccessible(true);
+                field.set(obj, map.get(field.getName()));
+            }
+            return obj;
+        } catch (Exception e) {
+            throw new RuntimeException("Can't mapToObject", e);
+        }
+    }
+
+    /**
+     * Object -> Map
+     *
+     * @param obj
+     * @return
+     */
+    public static Map<String, Object> objectToMap(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof Map) {
+            return (Map) obj;
+        }
+
+        try {
+            Map<String, Object> map = new HashMap<String, Object>();
+
+            Set<Field> fields = getFields(obj.getClass());
+            for (Field field : fields) {
+                field.setAccessible(true);
+                map.put(field.getName(), field.get(obj));
+            }
+
+            return map;
+        } catch (Exception e) {
+            throw new RuntimeException("Can't objectToMap", e);
+        }
+    }
+
+    /**
+     * 单类型
+     * TODO
+     *
+     * @param clazz
+     * @return
+     */
+    public static boolean isSingleClass(Class clazz) {
+        return clazz.isPrimitive() || Number.class.isAssignableFrom(clazz) || CharSequence.class.isAssignableFrom(clazz) || Date.class.isAssignableFrom(clazz);
+    }
 }

@@ -4,10 +4,13 @@ import com.denghb.eorm.Eorm;
 import com.denghb.eorm.EormException;
 import com.denghb.eorm.domain.Paging;
 import com.denghb.eorm.domain.PagingResult;
-import com.denghb.eorm.utils.EormUtils;
+import com.denghb.eorm.support.EormSupport;
+import com.denghb.eorm.support.model.Column;
+import com.denghb.eorm.support.model.Table;
 import com.denghb.eorm.utils.ReflectUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
@@ -16,7 +19,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -29,21 +31,55 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
         super(jdbcTemplate);
     }
 
+    public EormMySQLImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
+        super(jdbcTemplate, namedParameterJdbcTemplate);
+    }
+
+    @Override
     public <T> void insert(T domain) {
 
-        EormUtils.TableInfo table = EormUtils.getTableInfo(domain);
-
-        final List<Object> params = new ArrayList<Object>();
+        Table table = EormSupport.load(domain.getClass());
 
         StringBuilder csb = new StringBuilder();
         StringBuilder vsb = new StringBuilder();
+        final List<Object> params = new ArrayList<Object>();
 
-        List<EormUtils.Column> columns = table.getAllColumns();
-        for (int i = 0; i < columns.size(); i++) {
+        Object primaryKeyValue = null;
+        Field primaryKeyFiled = null;
+        Column primaryKeyColumn = null;
 
-            EormUtils.Column column = columns.get(i);
+        List<Column> pkColumns = table.getPkColumns();
+        for (Column column : pkColumns) {
 
-            if (i > 0) {
+            Field pkFiled = column.getField();
+            Object pkValue = ReflectUtils.getFieldValue(pkFiled, domain);
+            primaryKeyFiled = pkFiled;
+            primaryKeyColumn = column;
+
+            if (csb.length() > 0) {
+                csb.append(", ");
+                vsb.append(", ");
+            }
+
+            if (null != pkValue) {
+                csb.append('`');
+                csb.append(column.getName());
+                csb.append('`');
+
+                vsb.append('?');
+                params.add(pkValue);
+
+                primaryKeyValue = pkValue;
+            }
+        }
+
+        for (Column column : table.getOtherColumns()) {
+            Object value = ReflectUtils.getFieldValue(column.getField(), domain);
+            // 排除null
+            if (null == value) {
+                continue;
+            }
+            if (csb.length() > 0) {
                 csb.append(", ");
                 vsb.append(", ");
             }
@@ -51,36 +87,32 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
             csb.append(column.getName());
             csb.append('`');
 
-            vsb.append("?");
-
-            params.add(column.getValue());
+            vsb.append('?');
+            params.add(value);
         }
 
-        StringBuilder sb = new StringBuilder("insert into ");
-        sb.append(table.getTableName());
+        StringBuilder sb = new StringBuilder();
+        sb.append("insert into ");
+        sb.append(table.getName());
         sb.append(" (");
         sb.append(csb);
         sb.append(") values (");
         sb.append(vsb);
-        sb.append(")");
+        sb.append(')');
 
         final String sql = sb.toString();
 
         int res = 0;
-
-        List<Field> fields = table.getAllPrimaryKeyFields();
-        if (fields.size() == 1) {// 获取自增主键
-            if (log.isDebugEnabled()) {
-                log.debug("Params:" + Arrays.toString(params.toArray()));
-                log.debug("Execute SQL:" + sql);
-            }
-            Field field = fields.get(0);
-            final String keyColumn = EormUtils.getColumnName(field);
+        final Object[] args = params.toArray();
+        // 主键是否自动赋值
+        if (pkColumns.size() == 1 && null == primaryKeyValue && Number.class.isAssignableFrom(primaryKeyFiled.getType())) {
             KeyHolder keyHolder = new GeneratedKeyHolder();
+            outLog(sql, args);
+            final Column finalPrimaryKeyColumn = primaryKeyColumn;
             res = jdbcTemplate.update(new PreparedStatementCreator() {
+                @Override
                 public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-
-                    PreparedStatement ps = connection.prepareStatement(sql, new String[]{keyColumn});
+                    PreparedStatement ps = connection.prepareStatement(sql, new String[]{finalPrimaryKeyColumn.getName()});
                     for (int i = 0; i < params.size(); i++) {
                         Object obj = params.get(i);
                         ps.setObject(i + 1, obj);
@@ -89,43 +121,49 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
                 }
             }, keyHolder);
 
-            // 获取自动生成的ID并填充
-            Object object = ReflectUtils.getFieldValue(field, domain);
-            if (null == object) {
-                Number number = keyHolder.getKey();
-                Class type = field.getType();
-                if (type == Integer.class || type == int.class) {
-                    ReflectUtils.setFieldValue(field, domain, number.intValue());
-                } else if (type == Long.class || type == long.class) {
-                    ReflectUtils.setFieldValue(field, domain, number.longValue());
-                } else {
-                    throw new EormException();
-                }
+            Number number = keyHolder.getKey();
+            Class type = primaryKeyFiled.getType();
+            if (type == Integer.class || type == int.class) {
+                ReflectUtils.setFieldValue(primaryKeyFiled, domain, number.intValue());
+            } else if (type == Long.class || type == long.class) {
+                ReflectUtils.setFieldValue(primaryKeyFiled, domain, number.longValue());
+            } else {
+                throw new EormException("insert set primaryKey[" + primaryKeyColumn.getName() + "] value fail");
             }
-
         } else {
-            res = this.execute(sql, params.toArray());
+            res = execute(sql, args);
         }
+
         if (1 != res) {
-            throw new EormException();
+            outErrorLog(sql, args);
+            throw new EormException("insert fail");
         }
     }
 
+    /**
+     * insert into table_name(c1,c2,c3) values (?,?,?),(?,?,?),(?,?,?) ...
+     *
+     * @param list
+     * @param <T>
+     */
     public <T> void batchInsert(List<T> list) {
         if (null == list || list.isEmpty()) {
             throw new EormException("list is empty...");
         }
 
-        // 取第一个样本
-        T type = list.get(0);
-        EormUtils.TableInfo table = EormUtils.getTableInfo(type);
+        // 取第一个样本，后面的值必须要和第一个一样
+        T domain = list.get(0);
+        Table table = EormSupport.load(domain.getClass());
 
         StringBuilder csb = new StringBuilder();
-        List<EormUtils.Column> allColumns = table.getAllColumns();
+        List<Column> allColumns = table.getAllColumns();
         int columnSize = allColumns.size();
-        for (int i = 0; i < columnSize; i++) {
-            EormUtils.Column column = allColumns.get(i);
-            if (i > 0) {
+        for (Column column : allColumns) {
+            Object value = ReflectUtils.getFieldValue(column.getField(), domain);
+            if (null == value) {
+                continue;
+            }
+            if (csb.length() > 0) {
                 csb.append(", ");
             }
             csb.append('`');
@@ -144,19 +182,19 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
 
             vsb.append("(");
 
-            table = EormUtils.getTableInfo(list.get(i));
-
-            if (columnSize != table.getAllColumns().size()) {
-                throw new EormException("column size difference ...");
-            }
-
-            for (int j = 0; j < columnSize; j++) {
-                if (j > 0) {
+            boolean append = false;
+            for (Column column : allColumns) {
+                Object value = ReflectUtils.getFieldValue(column.getField(), list.get(i));
+                if (null == value) {
+                    continue;
+                }
+                if (append) {
                     vsb.append(", ");
                 }
                 vsb.append("?");
 
-                params.add(table.getAllColumns().get(j).getValue());
+                params.add(value);
+                append = true;
             }
 
             vsb.append(")");
@@ -164,7 +202,7 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
         }
 
         StringBuilder sb = new StringBuilder("insert into ");
-        sb.append(table.getTableName());
+        sb.append(table.getName());
         sb.append(" (");
         sb.append(csb);
 
@@ -180,8 +218,12 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
 
     public <T> PagingResult<T> page(Class<T> clazz, StringBuffer sql, Paging paging) {
         PagingResult<T> result = new PagingResult<T>(paging);
-
         Object[] objects = paging.getParams().toArray();
+        if (0 == objects.length && -1 < sql.indexOf(":")) {
+            objects = new Object[1];
+            objects[0] = ReflectUtils.objectToMap(paging);
+        }
+
         // 不分页 start
         long pageSize = paging.getPageSize();
         if (0 != pageSize) {
