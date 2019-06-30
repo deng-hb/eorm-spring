@@ -4,8 +4,9 @@ public class MultiLineSqlTest {
 
     public static void main(String[] args) {
         String sql = ""/*{
-           select count(*) from tb_user where name is not null and
-           deleted = 0 and name like '张%'
+           SELECT count(*) from tb_user u where name is not null and u
+           name
+
            order by age desc limit 10
         }*/;
 

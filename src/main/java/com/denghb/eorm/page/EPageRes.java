@@ -10,10 +10,10 @@ import java.util.List;
  */
 public class EPageRes<T> implements java.io.Serializable {
 
-    @ApiModelProperty("列表")
+    @ApiModelProperty(value = "列表")
     private List<T> list;
 
-    @ApiModelProperty("总数")
+    @ApiModelProperty(value = "总数")
     private long total;
 
     public EPageRes() {

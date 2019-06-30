@@ -16,47 +16,47 @@ public class EOrmQueryTemplateParser {
     // 性能？
     private static SpelExpressionParser _expressionParser = new SpelExpressionParser();
 
-    public static String parse(String sqlTemplate, Map<String, Object> params) {
+    public static String parse(String sql, Map<String, Object> params) {
 
-        sqlTemplate = sqlTemplate.replaceAll("\n", " ");
-        sqlTemplate = sqlTemplate.replaceAll("\t", " ");
-        sqlTemplate = sqlTemplate.replaceAll("\r", " ");
-        sqlTemplate = sqlTemplate.replaceAll("   ", " ");
-        sqlTemplate = sqlTemplate.replaceAll("  ", " ");
-        sqlTemplate = sqlTemplate.replaceAll("   ", " ");
-        sqlTemplate = sqlTemplate.replaceAll("  ", " ");
+        sql = sql.replaceAll("\n", " ");
+        sql = sql.replaceAll("\t", " ");
+        sql = sql.replaceAll("\r", " ");
+        sql = sql.replaceAll("   ", " ");
+        sql = sql.replaceAll("  ", " ");
+        sql = sql.replaceAll("   ", " ");
+        sql = sql.replaceAll("  ", " ");
 
-        if (!sqlTemplate.contains("#")) {
-            return sqlTemplate;
+        if (!sql.contains("#")) {
+            return sql;
         }
         StandardEvaluationContext ctx = null;
-        if (sqlTemplate.contains("#{")) {
+        if (sql.contains("#{")) {
             ctx = new StandardEvaluationContext();
             ctx.setVariables(params);
         }
-        StringBuilder sql = new StringBuilder();
+        StringBuilder ss = new StringBuilder();
         boolean append = true;
-        for (int i = 0; i < sqlTemplate.length(); i++) {
-            char c = sqlTemplate.charAt(i);
+        for (int i = 0; i < sql.length(); i++) {
+            char c = sql.charAt(i);
 
             // #{ SpEL }
-            if ('#' == c && '{' == sqlTemplate.charAt(i + 1)) {
+            if ('#' == c && '{' == sql.charAt(i + 1)) {
                 i = i + 2;
                 StringBuilder el = new StringBuilder();
-                for (; i < sqlTemplate.length(); i++) {
-                    c = sqlTemplate.charAt(i);
+                for (; i < sql.length(); i++) {
+                    c = sql.charAt(i);
                     if ('}' == c) {
                         break;
                     }
                     el.append(c);
                 }
                 append = _expressionParser.parseExpression(el.toString()).getValue(ctx, Boolean.class);
-            } else if ('#' == c && 'i' == sqlTemplate.charAt(i + 1) && 'f' == sqlTemplate.charAt(i + 2)) {
+            } else if ('#' == c && 'i' == sql.charAt(i + 1) && 'f' == sql.charAt(i + 2)) {
                 // #if ( )
                 i += 3;
                 StringBuilder name = new StringBuilder();
-                for (; i < sqlTemplate.length(); i++) {
-                    c = sqlTemplate.charAt(i);
+                for (; i < sql.length(); i++) {
+                    c = sql.charAt(i);
                     if (')' == c) {
                         break;
                     }
@@ -75,16 +75,16 @@ public class EOrmQueryTemplateParser {
                     append = false;
                 }
 
-            } else if ('#' == c && 'e' == sqlTemplate.charAt(i + 1) && 'n' == sqlTemplate.charAt(i + 2)
-                    && 'd' == sqlTemplate.charAt(i + 3)) {
+            } else if ('#' == c && 'e' == sql.charAt(i + 1) && 'n' == sql.charAt(i + 2)
+                    && 'd' == sql.charAt(i + 3)) {
                 // #end
                 i = i + 4;
                 append = true;
             } else if (append) {
-                sql.append(c);
+                ss.append(c);
             }
         }
-        return sql.toString();
+        return ss.toString();
 
     }
 

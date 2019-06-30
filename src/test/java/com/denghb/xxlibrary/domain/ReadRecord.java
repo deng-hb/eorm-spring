@@ -2,7 +2,7 @@ package com.denghb.xxlibrary.domain;
 
 import com.denghb.eorm.annotation.EColumn;
 import com.denghb.eorm.annotation.ETable;
-
+import io.swagger.annotations.ApiModelProperty;
 
 /**
  * 阅读记录
@@ -24,42 +24,41 @@ CREATE TABLE `read_record` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='阅读记录'
  <pre>
  * @author denghb
- * @generateTime Tue May 28 00:50:46 CST 2019
+ * @generateTime Sat Jun 29 21:15:58 CST 2019
  */
 @ETable(name="read_record", database="xxlibrary")
 public class ReadRecord implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
-	/** ID */
+	@ApiModelProperty(value = "ID")
 	@EColumn(name="id", primaryKey = true)
 	private Integer id;
 	
-	/** 学生ID */
+	@ApiModelProperty(value = "学生ID")
 	@EColumn(name="student_id")
 	private Integer studentId;
 	
-	/** 书籍ID */
+	@ApiModelProperty(value = "书籍ID")
 	@EColumn(name="book_id")
 	private String bookId;
 	
-	/** 插入时间 */
+	@ApiModelProperty(value = "插入时间")
 	@EColumn(name="created_time")
 	private java.util.Date createdTime;
 	
-	/** 更新时间 */
+	@ApiModelProperty(value = "更新时间")
 	@EColumn(name="updated_time")
 	private java.util.Date updatedTime;
 	
-	/** 逻辑删除 */
+	@ApiModelProperty(value = "逻辑删除")
 	@EColumn(name="deleted")
 	private Integer deleted;
 	
-	/** 版本号 */
+	@ApiModelProperty(value = "版本号")
 	@EColumn(name="version")
 	private Integer version;
 	
-
 	public Integer getId() {
 		return id;
 	}
