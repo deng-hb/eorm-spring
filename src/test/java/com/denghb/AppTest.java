@@ -5,7 +5,7 @@ import com.denghb.eorm.Eorm;
 import com.denghb.eorm.domain.Paging;
 import com.denghb.eorm.domain.PagingResult;
 import com.denghb.eorm.impl.EormMySQLImpl;
-import com.denghb.model.User;
+import com.denghb.domain.User;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
