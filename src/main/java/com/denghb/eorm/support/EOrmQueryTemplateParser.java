@@ -8,13 +8,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Auther: denghb
- * @Date: 2019-05-22 23:04
+ * @author denghb
  */
 public class EOrmQueryTemplateParser {
 
     // 性能？
-    private static SpelExpressionParser _expressionParser = new SpelExpressionParser();
+    private static SpelExpressionParser SpEL = new SpelExpressionParser();
 
     public static String parse(String sql, Map<String, Object> params) {
 
@@ -50,7 +49,7 @@ public class EOrmQueryTemplateParser {
                     }
                     el.append(c);
                 }
-                append = _expressionParser.parseExpression(el.toString()).getValue(ctx, Boolean.class);
+                append = SpEL.parseExpression(el.toString()).getValue(ctx, Boolean.class);
             } else if ('#' == c && 'i' == sql.charAt(i + 1) && 'f' == sql.charAt(i + 2)) {
                 // #if ( )
                 i += 3;
