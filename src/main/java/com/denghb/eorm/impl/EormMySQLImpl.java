@@ -10,7 +10,6 @@ import com.denghb.eorm.support.model.Table;
 import com.denghb.eorm.utils.ReflectUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
@@ -29,10 +28,6 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
 
     public EormMySQLImpl(JdbcTemplate jdbcTemplate) {
         super(jdbcTemplate);
-    }
-
-    public EormMySQLImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
-        super(jdbcTemplate, namedParameterJdbcTemplate);
     }
 
     @Override

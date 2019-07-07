@@ -34,11 +34,7 @@ public abstract class EormAbstractImpl implements Eorm {
 
     public EormAbstractImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-    }
-
-    public EormAbstractImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
     }
 
     protected void outLog(String sql, Object... args) {
@@ -62,7 +58,7 @@ public abstract class EormAbstractImpl implements Eorm {
     @Override
     public <T> List<T> select(Class<T> clazz, String sql, Object... args) {
         List<T> list = null;
-        if (sql.contains(":")) {// namedParameter
+        if (sql.contains(":") && null != args && 1 == args.length && !ReflectUtils.isSingleClass(args[0].getClass())) {// namedParameter
             Map<String, Object> params = null;
             Object object = args[0];
             if (null == object) {

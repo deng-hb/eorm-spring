@@ -151,5 +151,9 @@ public class AppTest {
 
         System.out.println(result);
 
+        String a = ""/*{
+        select u.mobile,u.created_time from user u
+         where id in (select id from user where age > 10)
+        }*/;
     }
 }
