@@ -12,7 +12,6 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.lang.reflect.Field;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,8 +34,8 @@ public abstract class EormSupport {
     /**
      * 加载表注解
      *
-     * @param clazz
-     * @return
+     * @param clazz Eorm 实体类
+     * @return 表对象
      */
     public static Table load(Class clazz) {
         String key = clazz.getName();
@@ -79,8 +78,8 @@ public abstract class EormSupport {
     /**
      * 解析主键
      *
-     * @param table
-     * @return
+     * @param table 表对象
+     * @return 主键查询拼接
      */
     public static String loadWherePrimaryKey(Table table) {
         String key = table.getName();
@@ -107,8 +106,8 @@ public abstract class EormSupport {
     /**
      * 加载所有的列
      *
-     * @param table
-     * @return
+     * @param table 表对象
+     * @return 列拼接
      */
     public static String loadAllColumnName(Table table) {
         String key = table.getName();
@@ -135,14 +134,13 @@ public abstract class EormSupport {
     /**
      * 获取表名
      *
-     * @param clazz
-     * @param <T>
-     * @return
+     * @param clazz Eorm 实体类
+     * @return 表名
      */
-    private static <T> String getTableName(Class<T> clazz) {
+    private static String getTableName(Class clazz) {
 
         // 获取表名
-        Etable table = clazz.getAnnotation(Etable.class);
+        Etable table = (Etable) clazz.getAnnotation(Etable.class);
         if (null == table) {
             throw new EormException("not found @Etable");
         }
@@ -162,23 +160,15 @@ public abstract class EormSupport {
     }
 
     /**
-     * 转换 #{} #end
+     * 转换 ${} #{} #end
      *
-     * @param sql
-     * @param params
-     * @return
+     * @param sql    模版
+     * @param params 参数
+     * @return 分析后的SQL
      */
     public static String parse(String sql, Map<String, Object> params) {
 
-        sql = sql.replaceAll("\n", " ");
-        sql = sql.replaceAll("\t", " ");
-        sql = sql.replaceAll("\r", " ");
-        sql = sql.replaceAll("   ", " ");
-        sql = sql.replaceAll("  ", " ");
-        sql = sql.replaceAll("   ", " ");
-        sql = sql.replaceAll("  ", " ");
-
-        if (!sql.contains("#")) {
+        if (!sql.contains("#") && !sql.contains("$")) {
             return sql;
         }
         StandardEvaluationContext ctx = null;
@@ -220,23 +210,6 @@ public abstract class EormSupport {
                 }
                 append = SpEL.parseExpression(el.toString()).getValue(ctx, Boolean.class);
 
-            } else if ('#' == c && 'n' == sql.charAt(i + 1) && 'o' == sql.charAt(i + 2)
-                    && 't' == sql.charAt(i + 3) && 'E' == sql.charAt(i + 4) && 'm' == sql.charAt(i + 5)
-                    && 'p' == sql.charAt(i + 6) && 't' == sql.charAt(i + 7) && 'y' == sql.charAt(i + 8)) {
-                // #notEmpty( name )
-                i = i + 9;
-                StringBuilder name = new StringBuilder();
-                for (; i < sql.length(); i++) {
-                    c = sql.charAt(i);
-                    if (')' == c) {
-                        break;
-                    }
-                    if ('(' != c && ' ' != c) {
-                        name.append(c);
-                    }
-                }
-                Object object = params.get(name.toString());
-                append = notEmpty(object);
             } else if ('#' == c && 'e' == sql.charAt(i + 1) && 'n' == sql.charAt(i + 2)
                     && 'd' == sql.charAt(i + 3)) {
                 // #end
@@ -248,20 +221,6 @@ public abstract class EormSupport {
         }
         return ss.toString();
 
-    }
-
-    private static boolean notEmpty(Object object) {
-        if (null == object) {
-            return false;
-        } else if (object instanceof CharSequence) {
-            return String.valueOf(object).trim().length() > 0;
-        } else if (object instanceof Boolean || object instanceof Number || object instanceof Date) {
-            return true;
-        } else if (object instanceof List) {
-            return !((List) object).isEmpty();
-        } else {
-            return false;
-        }
     }
 
 }

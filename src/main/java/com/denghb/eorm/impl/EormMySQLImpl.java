@@ -9,19 +9,12 @@ import com.denghb.eorm.support.model.Column;
 import com.denghb.eorm.support.model.Table;
 import com.denghb.eorm.utils.ReflectUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCreator;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 
-import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * MySQL 实现
+ * MySQL 批量插入和分页实现
  */
 public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
 
@@ -30,116 +23,11 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
         super(jdbcTemplate);
     }
 
-    @Override
-    public <T> void insert(T domain) {
-
-        Table table = EormSupport.load(domain.getClass());
-
-        StringBuilder csb = new StringBuilder();
-        StringBuilder vsb = new StringBuilder();
-        final List<Object> params = new ArrayList<Object>();
-
-        Object primaryKeyValue = null;
-        Field primaryKeyFiled = null;
-        Column primaryKeyColumn = null;
-
-        List<Column> pkColumns = table.getPkColumns();
-        for (Column column : pkColumns) {
-
-            Field pkFiled = column.getField();
-            Object pkValue = ReflectUtils.getFieldValue(pkFiled, domain);
-            primaryKeyFiled = pkFiled;
-            primaryKeyColumn = column;
-
-            if (csb.length() > 0) {
-                csb.append(", ");
-                vsb.append(", ");
-            }
-
-            if (null != pkValue) {
-                csb.append('`');
-                csb.append(column.getName());
-                csb.append('`');
-
-                vsb.append('?');
-                params.add(pkValue);
-
-                primaryKeyValue = pkValue;
-            }
-        }
-
-        for (Column column : table.getOtherColumns()) {
-            Object value = ReflectUtils.getFieldValue(column.getField(), domain);
-            // 排除null
-            if (null == value) {
-                continue;
-            }
-            if (csb.length() > 0) {
-                csb.append(", ");
-                vsb.append(", ");
-            }
-            csb.append('`');
-            csb.append(column.getName());
-            csb.append('`');
-
-            vsb.append('?');
-            params.add(value);
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("insert into ");
-        sb.append(table.getName());
-        sb.append(" (");
-        sb.append(csb);
-        sb.append(") values (");
-        sb.append(vsb);
-        sb.append(')');
-
-        final String sql = sb.toString();
-
-        int res = 0;
-        final Object[] args = params.toArray();
-        // 主键是否自动赋值
-        if (pkColumns.size() == 1 && null == primaryKeyValue && Number.class.isAssignableFrom(primaryKeyFiled.getType())) {
-            KeyHolder keyHolder = new GeneratedKeyHolder();
-            outLog(sql, args);
-            final Column finalPrimaryKeyColumn = primaryKeyColumn;
-            res = jdbcTemplate.update(new PreparedStatementCreator() {
-                @Override
-                public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-                    PreparedStatement ps = connection.prepareStatement(sql, new String[]{finalPrimaryKeyColumn.getName()});
-                    for (int i = 0; i < params.size(); i++) {
-                        Object obj = params.get(i);
-                        ps.setObject(i + 1, obj);
-                    }
-                    return ps;
-                }
-            }, keyHolder);
-
-            Number number = keyHolder.getKey();
-            Class type = primaryKeyFiled.getType();
-            if (type == Integer.class || type == int.class) {
-                ReflectUtils.setFieldValue(primaryKeyFiled, domain, number.intValue());
-            } else if (type == Long.class || type == long.class) {
-                ReflectUtils.setFieldValue(primaryKeyFiled, domain, number.longValue());
-            } else {
-                throw new EormException("insert set primaryKey[" + primaryKeyColumn.getName() + "] value fail");
-            }
-        } else {
-            res = execute(sql, args);
-        }
-
-        if (1 != res) {
-            outErrorLog(sql, args);
-            throw new EormException("insert fail");
-        }
-    }
-
     /**
      * insert into table_name(c1,c2,c3) values (?,?,?),(?,?,?),(?,?,?) ...
      *
-     * @param list
-     * @param <T>
+     * @param list 对象列表
+     * @param <T>  类型
      */
     public <T> void batchInsert(List<T> list) {
         if (null == list || list.isEmpty()) {
@@ -211,6 +99,15 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
         }
     }
 
+    /**
+     * 分页
+     *
+     * @param clazz  类
+     * @param sql    查询SQL
+     * @param paging 分页对象
+     * @param <T>    类型
+     * @return 分页结果
+     */
     public <T> PagingResult<T> page(Class<T> clazz, StringBuffer sql, Paging paging) {
         PagingResult<T> result = new PagingResult<T>(paging);
         Object[] objects = paging.getParams().toArray();

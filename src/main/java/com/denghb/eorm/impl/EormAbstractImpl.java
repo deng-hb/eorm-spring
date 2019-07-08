@@ -10,19 +10,22 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 抽象实现
- * insert
- * batchInsert
- * list
- * doTx
+ * 核心实现
  */
 public abstract class EormAbstractImpl implements Eorm {
 
@@ -93,6 +96,111 @@ public abstract class EormAbstractImpl implements Eorm {
             }
         }
         return list;
+    }
+
+    @Override
+    public <T> void insert(T domain) {
+
+        Table table = EormSupport.load(domain.getClass());
+
+        StringBuilder csb = new StringBuilder();
+        StringBuilder vsb = new StringBuilder();
+        final List<Object> params = new ArrayList<Object>();
+
+        Object primaryKeyValue = null;
+        Field primaryKeyFiled = null;
+        Column primaryKeyColumn = null;
+
+        List<Column> pkColumns = table.getPkColumns();
+        for (Column column : pkColumns) {
+
+            Field pkFiled = column.getField();
+            Object pkValue = ReflectUtils.getFieldValue(pkFiled, domain);
+            primaryKeyFiled = pkFiled;
+            primaryKeyColumn = column;
+
+            if (csb.length() > 0) {
+                csb.append(", ");
+                vsb.append(", ");
+            }
+
+            if (null != pkValue) {
+                csb.append('`');
+                csb.append(column.getName());
+                csb.append('`');
+
+                vsb.append('?');
+                params.add(pkValue);
+
+                primaryKeyValue = pkValue;
+            }
+        }
+
+        for (Column column : table.getOtherColumns()) {
+            Object value = ReflectUtils.getFieldValue(column.getField(), domain);
+            // 排除null
+            if (null == value) {
+                continue;
+            }
+            if (csb.length() > 0) {
+                csb.append(", ");
+                vsb.append(", ");
+            }
+            csb.append('`');
+            csb.append(column.getName());
+            csb.append('`');
+
+            vsb.append('?');
+            params.add(value);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("insert into ");
+        sb.append(table.getName());
+        sb.append(" (");
+        sb.append(csb);
+        sb.append(") values (");
+        sb.append(vsb);
+        sb.append(')');
+
+        final String sql = sb.toString();
+
+        int res = 0;
+        final Object[] args = params.toArray();
+        // 主键是否自动赋值
+        if (pkColumns.size() == 1 && null == primaryKeyValue && Number.class.isAssignableFrom(primaryKeyFiled.getType())) {
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+            outLog(sql, args);
+            final Column finalPrimaryKeyColumn = primaryKeyColumn;
+            res = jdbcTemplate.update(new PreparedStatementCreator() {
+                @Override
+                public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
+                    PreparedStatement ps = connection.prepareStatement(sql, new String[]{finalPrimaryKeyColumn.getName()});
+                    for (int i = 0; i < params.size(); i++) {
+                        Object obj = params.get(i);
+                        ps.setObject(i + 1, obj);
+                    }
+                    return ps;
+                }
+            }, keyHolder);
+
+            Number number = keyHolder.getKey();
+            Class type = primaryKeyFiled.getType();
+            if (type == Integer.class || type == int.class) {
+                ReflectUtils.setFieldValue(primaryKeyFiled, domain, number.intValue());
+            } else if (type == Long.class || type == long.class) {
+                ReflectUtils.setFieldValue(primaryKeyFiled, domain, number.longValue());
+            } else {
+                throw new EormException("insert set primaryKey[" + primaryKeyColumn.getName() + "] value fail");
+            }
+        } else {
+            res = execute(sql, args);
+        }
+
+        if (1 != res) {
+            outErrorLog(sql, args);
+            throw new EormException("insert fail");
+        }
     }
 
     @Override

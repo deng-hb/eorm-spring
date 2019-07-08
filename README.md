@@ -8,7 +8,7 @@
 <dependency>
     <groupId>com.denghb</groupId>
     <artifactId>eorm-spring</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
 </dependency>
 ```
 
