@@ -1,4 +1,4 @@
-package com.denghb.criteria;
+package com.denghb.test.criteria;
 
 import com.denghb.eorm.domain.Paging;
 

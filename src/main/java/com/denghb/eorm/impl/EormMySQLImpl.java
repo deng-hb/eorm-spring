@@ -5,6 +5,7 @@ import com.denghb.eorm.EormException;
 import com.denghb.eorm.domain.Paging;
 import com.denghb.eorm.domain.PagingResult;
 import com.denghb.eorm.support.EormSupport;
+import com.denghb.eorm.support.EormTraceSupport;
 import com.denghb.eorm.support.model.Column;
 import com.denghb.eorm.support.model.Table;
 import com.denghb.eorm.utils.ReflectUtils;
@@ -30,6 +31,7 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
      * @param <T>  类型
      */
     public <T> void batchInsert(List<T> list) {
+        EormTraceSupport.start();
         if (null == list || list.isEmpty()) {
             throw new EormException("list is empty...");
         }
@@ -109,6 +111,7 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
      * @return 分页结果
      */
     public <T> PagingResult<T> page(Class<T> clazz, StringBuffer sql, Paging paging) {
+        EormTraceSupport.start();
         PagingResult<T> result = new PagingResult<T>(paging);
         Object[] objects = paging.getParams().toArray();
         if (0 == objects.length && -1 < sql.indexOf(":")) {

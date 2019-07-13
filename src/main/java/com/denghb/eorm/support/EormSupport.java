@@ -160,7 +160,32 @@ public abstract class EormSupport {
     }
 
     /**
-     * 转换 ${} #{} #end
+     * 美化分析SQL
+     *
+     * @param sql  原SQL
+     * @param args 参数
+     * @return 美化后的SQL
+     */
+    public static String parse(String sql, Object... args) {
+
+        return sql;
+    }
+
+    /**
+     * 转换SQL模版
+     * <pre>
+     *     String month = "201905";
+     *     tb_user_${month} > tb_user_201905
+     *
+     *
+     *     #if()
+     *
+     *     #elseif()
+     *
+     *     #elseå
+     *
+     *     #end
+     * </pre>
      *
      * @param sql    模版
      * @param params 参数
