@@ -15,7 +15,8 @@ public class EormTraceSupport {
 
     private static final String PREFIX = "E";
 
-    private static final String PACKAGE_NAME = "com.denghb.eorm";
+    private static final String PACKAGE_NAME = "com.denghb.eorm.impl";
+    private static final String PACKAGE_NAME2 = "com.denghb.eorm.support";
 
     private static final AtomicLong counter = new AtomicLong(100000000);
 
@@ -31,7 +32,8 @@ public class EormTraceSupport {
             StackTraceElement[] stackTraceElements = new Throwable().getStackTrace();
             // 不是 @see PACKAGE_NAME 的才塞进来
             for (StackTraceElement stackTraceElement : stackTraceElements) {
-                if (!stackTraceElement.getClassName().startsWith(PACKAGE_NAME)) {
+                String className = stackTraceElement.getClassName();
+                if (!className.startsWith(PACKAGE_NAME) && !className.startsWith(PACKAGE_NAME2)) {
                     trace.setStackTraceElement(stackTraceElement);
                     break;
                 }

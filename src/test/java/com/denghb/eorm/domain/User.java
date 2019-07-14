@@ -1,4 +1,4 @@
-package com.denghb.test.domain;
+package com.denghb.eorm.domain;
 
 import com.denghb.eorm.annotation.Ecolumn;
 import com.denghb.eorm.annotation.Etable;

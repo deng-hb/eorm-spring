@@ -1,6 +1,6 @@
-package com.denghb.test;
+package com.denghb.eorm;
 
-import com.denghb.test.domain.User;
+import com.denghb.eorm.domain.User;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 

@@ -1,10 +1,9 @@
-package com.denghb.test;
+package com.denghb.eorm;
 
-import com.denghb.eorm.Eorm;
 import com.denghb.eorm.domain.Paging;
 import com.denghb.eorm.domain.PagingResult;
 import com.denghb.eorm.impl.EormMySQLImpl;
-import com.denghb.test.domain.User;
+import com.denghb.eorm.domain.User;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;

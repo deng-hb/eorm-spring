@@ -1,8 +1,8 @@
-package com.denghb.test;
+package com.denghb.eorm;
 
 import com.denghb.eorm.domain.Paging;
 import com.denghb.eorm.domain.PagingResult;
-import com.denghb.test.domain.User;
+import com.denghb.eorm.domain.User;
 import org.junit.Test;
 
 /**
