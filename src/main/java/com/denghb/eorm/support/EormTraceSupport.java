@@ -4,7 +4,18 @@ import com.denghb.eorm.support.model.Trace;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 方法跟踪
+ * start() 后必须 end()
+ *
+ * @author denghb
+ * @since 2019-07-14 17:53
+ */
 public class EormTraceSupport {
+
+    private static final String PREFIX = "E";
+
+    private static final String PACKAGE_NAME = "com.denghb.eorm";
 
     private static final AtomicLong counter = new AtomicLong(100000000);
 
@@ -14,23 +25,26 @@ public class EormTraceSupport {
         Trace trace = get();
         if (null == trace) {
             trace = new Trace();
-            trace.setId(String.valueOf(counter.getAndIncrement()));
+            trace.setId(genId());
             trace.setStartTime(System.currentTimeMillis());
 
             StackTraceElement[] stackTraceElements = new Throwable().getStackTrace();
-            trace.setStackTraceElements(stackTraceElements);
-
-            StackTraceElement e = stackTraceElements[2];
-            String method = String.format("%s.%s(%s:%d)", e.getClassName(), e.getMethodName(), e.getFileName(), e.getLineNumber());
-            trace.setMethod(e.toString());
+            // 不是 @see PACKAGE_NAME 的才塞进来
+            for (StackTraceElement stackTraceElement : stackTraceElements) {
+                if (!stackTraceElement.getClassName().startsWith(PACKAGE_NAME)) {
+                    trace.setStackTraceElement(stackTraceElement);
+                    break;
+                }
+            }
             local.set(trace);
         }
 
     }
 
-    /**
-     * 获取
-     */
+    private static String genId() {
+        return PREFIX + counter.getAndIncrement();
+    }
+
     public static Trace get() {
         return local.get();
     }

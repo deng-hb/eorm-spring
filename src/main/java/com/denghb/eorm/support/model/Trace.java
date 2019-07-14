@@ -10,9 +10,7 @@ public class Trace {
 
     private long startTime;
 
-    private StackTraceElement[] stackTraceElements;
-
-    private String method;
+    private StackTraceElement stackTraceElement;
 
     public String getId() {
         return id;
@@ -30,19 +28,11 @@ public class Trace {
         this.startTime = startTime;
     }
 
-    public StackTraceElement[] getStackTraceElements() {
-        return stackTraceElements;
+    public StackTraceElement getStackTraceElement() {
+        return stackTraceElement;
     }
 
-    public void setStackTraceElements(StackTraceElement[] stackTraceElements) {
-        this.stackTraceElements = stackTraceElements;
-    }
-
-    public String getMethod() {
-        return method;
-    }
-
-    public void setMethod(String method) {
-        this.method = method;
+    public void setStackTraceElement(StackTraceElement stackTraceElement) {
+        this.stackTraceElement = stackTraceElement;
     }
 }

@@ -50,7 +50,7 @@ public abstract class EormAbstractImpl implements Eorm {
         Trace trace = EormTraceSupport.get();
         sql = EormSupport.parse(sql, args);
         String tid = trace.getId();
-        log.debug(MessageFormat.format("({0}) -> Method      :{1}", tid, trace.getMethod()));
+        log.debug(MessageFormat.format("{0} -> ({1})", trace.getStackTraceElement(), tid));
         log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
         log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
 
@@ -70,7 +70,7 @@ public abstract class EormAbstractImpl implements Eorm {
         sql = EormSupport.parse(sql, args);
         String tid = trace.getId();
         int size = 0;
-        log.debug(MessageFormat.format("({0}) -> Method      :{1}", tid, trace.getMethod()));
+        log.debug(MessageFormat.format("{0} -> ({1})", trace.getStackTraceElement(), tid));
         List<T> list = null;
         if (sql.contains(":") && null != args && 1 == args.length && !ReflectUtils.isSingleClass(args[0].getClass())) {// namedParameter
             Map<String, Object> params = null;
@@ -193,7 +193,7 @@ public abstract class EormAbstractImpl implements Eorm {
             Trace trace = EormTraceSupport.get();
             String tid = trace.getId();
 
-            log.debug(MessageFormat.format("({0}) -> Method      :{1}", tid, trace.getMethod()));
+            log.debug(MessageFormat.format("{0} -> ({1})", trace.getStackTraceElement(), tid));
             log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
             log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
 

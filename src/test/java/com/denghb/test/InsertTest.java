@@ -4,6 +4,9 @@ import com.denghb.test.domain.User;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * @author denghb
  * @since 2019-07-13 22:56
@@ -16,27 +19,18 @@ public class InsertTest extends AppTest {
         User user = new User();
         user.setOpenId(genOpenId());
         db.insert(user);
-        throw new RuntimeException();
+
+        log.info(user);
     }
 
     @Test
     public void test2() throws InterruptedException {
 
-        final String mobile = 1 + RandomStringUtils.randomAlphanumeric(10);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-
-
-                User user = new User();
-                user.setMobile(mobile);
-                while (true) {
-                    user.setOpenId(genOpenId());
-                    user.setId(null);
-                    db.insert(user);
-                }
-            }
-        }).start();
+        final String mobile = 1 + RandomStringUtils.randomNumeric(10);
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        for (int i = 0; i < 10; i++) {
+            executorService.submit(new InsertThread(mobile));
+        }
 
         // 5秒插入数量
         Thread.sleep(5000);
@@ -50,4 +44,22 @@ public class InsertTest extends AppTest {
         log.info("5000ms insert:" + count);
     }
 
+    public class InsertThread implements Runnable {
+        String mobile;
+
+        public InsertThread(String mobile) {
+            this.mobile = mobile;
+        }
+
+        @Override
+        public void run() {
+            User user = new User();
+            user.setMobile(mobile);
+            while (true) {
+                user.setOpenId(genOpenId());
+                user.setId(null);
+                db.insert(user);
+            }
+        }
+    }
 }
