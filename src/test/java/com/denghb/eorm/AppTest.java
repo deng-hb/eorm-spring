@@ -2,10 +2,9 @@ package com.denghb.eorm;
 
 import com.denghb.eorm.domain.Paging;
 import com.denghb.eorm.domain.PagingResult;
-import com.denghb.eorm.impl.EormMySQLImpl;
 import com.denghb.eorm.domain.User;
+import com.denghb.eorm.impl.EormMySQLImpl;
 import org.apache.log4j.Logger;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -38,7 +37,7 @@ public class AppTest {
     /**
      * Rigorous Test :-)
      */
-    @Test
+//    @Test
     public void test() {
         ApplicationContext ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
 
@@ -76,7 +75,7 @@ public class AppTest {
 
     InheritableThreadLocal<Integer> idHub = new InheritableThreadLocal<Integer>();
 
-    @Test
+//    @Test
     public void test2() throws InterruptedException {
         final ApplicationContext ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
         ExecutorService executorService = Executors.newFixedThreadPool(10);

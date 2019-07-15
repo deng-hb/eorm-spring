@@ -1,5 +1,6 @@
 package com.denghb.eorm;
 
+import com.denghb.eorm.domain.User;
 import org.junit.Test;
 
 /**
@@ -12,5 +13,7 @@ public class SelectOneTest extends AppTest {
     @Test
     public void test1() {
 
+        User user = db.selectOne(User.class, "select open_id from tb_user where id > 0");
+        log.info(user);
     }
 }

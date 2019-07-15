@@ -5,6 +5,7 @@ import com.denghb.eorm.EormException;
 import com.denghb.eorm.annotation.Ecolumn;
 import com.denghb.eorm.annotation.Etable;
 import com.denghb.eorm.support.model.Column;
+import com.denghb.eorm.support.model.Expression;
 import com.denghb.eorm.support.model.Table;
 import com.denghb.eorm.utils.ReflectUtils;
 import org.springframework.expression.ExpressionParser;
@@ -171,6 +172,12 @@ public abstract class EormSupport {
         return sql;
     }
 
+    private static final char HASH = '#';
+    private static final String IF = "if";
+    private static final String ELSE_IF = "elseIf";
+    private static final String ELSE = "else";
+    private static final String END = "end";
+
     /**
      * 转换SQL模版
      * <pre>
@@ -182,7 +189,7 @@ public abstract class EormSupport {
      *
      *     #elseif()
      *
-     *     #elseå
+     *     #else
      *
      *     #end
      * </pre>
@@ -197,18 +204,21 @@ public abstract class EormSupport {
             return sql;
         }
         StandardEvaluationContext ctx = null;
-        if (sql.contains("#{")) {
+        if (sql.contains("#if")) {
             ctx = new StandardEvaluationContext();
             ctx.setVariables(params);
         }
         StringBuilder ss = new StringBuilder();
         boolean append = true;
+
+        // 协助流程判断
+        boolean _if = false, _elseIf = false;
+
         for (int i = 0; i < sql.length(); i++) {
             char c = sql.charAt(i);
-
             // a${b}c > abc
             if ('$' == c && '{' == sql.charAt(i + 1)) {
-                i = i + 2;
+                i += 2;
                 StringBuilder name = new StringBuilder();
                 for (; i < sql.length(); i++) {
                     c = sql.charAt(i);
@@ -222,29 +232,168 @@ public abstract class EormSupport {
                 }
                 Object object = params.get(name.toString());
                 ss.append(object);// 只当成字符串拼接
-            } else if ('#' == c && '{' == sql.charAt(i + 1)) {
-                // #{ SpEL }
-                i = i + 2;
-                StringBuilder el = new StringBuilder();
-                for (; i < sql.length(); i++) {
-                    c = sql.charAt(i);
-                    if ('}' == c) {
-                        break;
-                    }
-                    el.append(c);
-                }
-                append = SpEL.parseExpression(el.toString()).getValue(ctx, Boolean.class);
+            } else if (HASH == c) {
+                i++;
+                // #if
+                if (hasKeyword(sql, IF, i)) {
+                    i += 3;
+                    Expression e = getExpression(sql, i);
+                    i = e.getEndIndex();
+                    append = SpEL.parseExpression(e.getContent()).getValue(ctx, Boolean.class);
+                    _if = append;
 
-            } else if ('#' == c && 'e' == sql.charAt(i + 1) && 'n' == sql.charAt(i + 2)
-                    && 'd' == sql.charAt(i + 3)) {
+                    if (!append) {
+                        i = ignoreInternalIfEnd(sql, i);
+                    }
+                }
+                // #elseIf
+                else if (hasKeyword(sql, ELSE_IF, i)) {
+                    i += 7;
+                    if (_if) {
+                        continue;
+                    }
+                    Expression e = getExpression(sql, i);
+                    i = e.getEndIndex();
+                    append = SpEL.parseExpression(e.getContent()).getValue(ctx, Boolean.class);
+                    _elseIf = append;
+
+                    if (!append) {
+                        i = ignoreInternalIfEnd(sql, i);
+                    }
+                }
+                // #else
+                else if (hasKeyword(sql, ELSE, i)) {
+                    i += 5;
+                    append = !_if && !_elseIf;
+                }
                 // #end
-                i = i + 4;
-                append = true;
+                else if (hasKeyword(sql, END, i)) {
+                    i += 4;
+                    append = true;
+
+                    _if = false;
+                    _elseIf = false;
+                }
             } else if (append) {
                 ss.append(c);
             }
         }
         return ss.toString();
+    }
+
+    /**
+     * 忽略平级 #elseIf #else #end
+     *
+     * @param sql 模版
+     * @param i   索引
+     * @return 接下来的索引
+     */
+    private static int ignoreNextToEnd(String sql, int i) {
+        int index = i;
+        return index;
+    }
+
+    /**
+     * 忽略#if、#elseIf 内部 #if ... #end
+     *
+     * @param sql 模版
+     * @param i   索引
+     * @return 接下来的索引
+     */
+    private static int ignoreInternalIfEnd(String sql, int i) {
+        int countIf = 0;
+        int index = i;
+        for (; i < sql.length(); i++) {
+            char c = sql.charAt(i);
+            if (HASH != c) {
+                continue;
+            }
+            i++;
+            if (hasKeyword(sql, IF, i)) {
+                countIf++;
+            } else if (0 < countIf && hasKeyword(sql, END, i)) {
+                countIf--;
+                index = i;
+            } else if (0 == countIf && (hasKeyword(sql, ELSE_IF, i) || hasKeyword(sql, ELSE, i))) {
+                break;
+            }
+        }
+        return index;
+    }
+
+    /**
+     * 判断接下来的字符串是否为keyword
+     *
+     * @param sql     模版
+     * @param keyword 关键字
+     * @param i       索引
+     * @return 结果
+     */
+    private static boolean hasKeyword(String sql, String keyword, int i) {
+        if (null == keyword || null == sql) {
+            return false;
+        }
+        int length = keyword.length();
+        if (sql.length() < i + length) {
+            return false;
+        }
+        for (int j = 0; j < length; j++) {
+            if (sql.charAt(i + j) != keyword.charAt(j)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 获取 #xxx (Expression)
+     *
+     * @param sql 模版
+     * @param i   索引
+     * @return Expression
+     */
+    private static Expression getExpression(String sql, int i) {
+
+        StringBuilder el = new StringBuilder();
+        int counter = 0;// `(` 计数器
+        for (; i < sql.length(); i++) {
+            char c = sql.charAt(i);
+            if ('(' == c) {
+                counter++;
+                if (1 == counter) {
+                    continue;
+                }
+            }
+            if (')' == c) {
+                counter--;
+                if (0 == counter) {
+                    break;
+                }
+            }
+
+            if (0 < counter) {
+                el.append(c);
+            }
+        }
+        return new Expression(i, el.toString());
+    }
+
+
+    /**
+     * 获取接下来的字符串
+     *
+     * @param source 原字符串
+     * @param start  开始索引
+     * @param length 长度
+     * @return 自定索引
+     */
+    private static String getNextLengthString(String source, int start, int length) {
+        if (start + length > source.length()) {
+            // 越界
+
+        }
+
+        return null;
 
     }
 
