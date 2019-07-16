@@ -172,11 +172,12 @@ public abstract class EormSupport {
         return sql;
     }
 
+    private static final char $ = '$';
     private static final char HASH = '#';
-    private static final String IF = "if";
-    private static final String ELSE_IF = "elseIf";
-    private static final String ELSE = "else";
-    private static final String END = "end";
+    private static final String HASH_IF = "#if";
+    private static final String HASH_ELSE_IF = "#elseIf";
+    private static final String HASH_ELSE = "#else";
+    private static final String HASH_END = "#end";
 
     /**
      * 转换SQL模版
@@ -200,24 +201,19 @@ public abstract class EormSupport {
      */
     public static String parse(String sql, Map<String, Object> params) {
 
-        if (!sql.contains("#") && !sql.contains("$")) {
+        if (-1 == sql.indexOf(HASH) && -1 == sql.indexOf($)) {
             return sql;
         }
-        StandardEvaluationContext ctx = null;
-        if (sql.contains("#if")) {
-            ctx = new StandardEvaluationContext();
-            ctx.setVariables(params);
+        StandardEvaluationContext seContext = null;
+        if (sql.contains(HASH_IF)) {
+            seContext = new StandardEvaluationContext();
+            seContext.setVariables(params);
         }
-        StringBuilder ss = new StringBuilder();
-        boolean append = true;
-
-        // 协助流程判断
-        boolean _if = false, _elseIf = false;
-
+        StringBuilder appendSQL = new StringBuilder();
         for (int i = 0; i < sql.length(); i++) {
             char c = sql.charAt(i);
             // a${b}c > abc
-            if ('$' == c && '{' == sql.charAt(i + 1)) {
+            if ($ == c && '{' == sql.charAt(i + 1)) {
                 i += 2;
                 StringBuilder name = new StringBuilder();
                 for (; i < sql.length(); i++) {
@@ -231,66 +227,95 @@ public abstract class EormSupport {
                     name.append(c);
                 }
                 Object object = params.get(name.toString());
-                ss.append(object);// 只当成字符串拼接
-            } else if (HASH == c) {
-                i++;
-                // #if
-                if (hasKeyword(sql, IF, i)) {
-                    i += 3;
-                    Expression e = getExpression(sql, i);
-                    i = e.getEndIndex();
-                    append = SpEL.parseExpression(e.getContent()).getValue(ctx, Boolean.class);
-                    _if = append;
-
-                    if (!append) {
-                        i = ignoreInternalIfEnd(sql, i);
-                    }
-                }
-                // #elseIf
-                else if (hasKeyword(sql, ELSE_IF, i)) {
-                    i += 7;
-                    if (_if) {
-                        continue;
-                    }
-                    Expression e = getExpression(sql, i);
-                    i = e.getEndIndex();
-                    append = SpEL.parseExpression(e.getContent()).getValue(ctx, Boolean.class);
-                    _elseIf = append;
-
-                    if (!append) {
-                        i = ignoreInternalIfEnd(sql, i);
-                    }
-                }
-                // #else
-                else if (hasKeyword(sql, ELSE, i)) {
-                    i += 5;
-                    append = !_if && !_elseIf;
-                }
-                // #end
-                else if (hasKeyword(sql, END, i)) {
-                    i += 4;
-                    append = true;
-
-                    _if = false;
-                    _elseIf = false;
-                }
-            } else if (append) {
-                ss.append(c);
+                appendSQL.append(object);// 只当成字符串拼接
+            } else {
+                appendSQL.append(c);
             }
         }
+
+        sql = appendSQL.toString();
+
+        StringBuilder ss = new StringBuilder();
+        int i = parseIfElseIfElseEnd(sql, 0, ss, seContext);
         return ss.toString();
     }
 
-    /**
-     * 忽略平级 #elseIf #else #end
-     *
-     * @param sql 模版
-     * @param i   索引
-     * @return 接下来的索引
-     */
-    private static int ignoreNextToEnd(String sql, int i) {
-        int index = i;
-        return index;
+    // 判断有么有#if
+    private static int parseIfElseIfElseEnd(String sql, int i, StringBuilder ss, StandardEvaluationContext seContext) {
+
+        String nextSQL = sql.substring(i);
+        for (int j = 0; j < nextSQL.length(); j++) {
+            if (HASH != nextSQL.charAt(j)) {
+                continue;
+            }
+            if (hasKeyword(nextSQL, HASH_IF, j)) {
+                break;
+            }
+            if (hasKeyword(nextSQL, HASH_ELSE_IF, j)) {
+                return i;
+            }
+            if (hasKeyword(nextSQL, HASH_ELSE, j)) {
+                return i;
+            }
+            if (hasKeyword(nextSQL, HASH_END, j)) {
+                return i;
+            }
+
+        }
+        boolean append = true;
+
+        // 协助流程判断
+        boolean _if = false, _elseIf = false, _else = false;
+
+        for (; i < sql.length(); i++) {
+            char c = sql.charAt(i);
+            // #if
+            if (HASH == c && hasKeyword(sql, HASH_IF, i)) {
+                i += 3;
+                Expression e = getExpression(sql, i);
+                i = e.getEndIndex();
+                append = SpEL.parseExpression(e.getContent()).getValue(seContext, Boolean.class);
+                _if = append;
+                if (!append) {
+                    i = ignoreInternalIfEnd(sql, i);
+                } else {
+                    i = parseIfElseIfElseEnd(sql, i, ss, seContext);
+                }
+            }
+            // #elseIf
+            else if (HASH == c && !_if && hasKeyword(sql, HASH_ELSE_IF, i)) {
+                i += 7;
+                if (_elseIf) {
+                    append = false;
+                    continue;
+                }
+                Expression e = getExpression(sql, i);
+                i = e.getEndIndex();
+                append = SpEL.parseExpression(e.getContent()).getValue(seContext, Boolean.class);
+                _elseIf = append;
+
+                if (!append) {
+                    i = ignoreInternalIfEnd(sql, i);
+                } else {
+                    i = parseIfElseIfElseEnd(sql, i, ss, seContext);
+                }
+            }
+            // #else
+            else if (HASH == c && !_if && !_elseIf && hasKeyword(sql, HASH_ELSE, i)) {
+                i += 5;
+                i = parseIfElseIfElseEnd(sql, i, ss, seContext);
+                append = true;
+            }
+            // #end
+            else if (HASH == c && hasKeyword(sql, HASH_END, i)) {
+                i += 4;
+                append = true;
+            } else if (append) {
+                ss.append(c);
+            }
+
+        }
+        return i;
     }
 
     /**
@@ -305,17 +330,17 @@ public abstract class EormSupport {
         int index = i;
         for (; i < sql.length(); i++) {
             char c = sql.charAt(i);
-            if (HASH != c) {
-                continue;
-            }
-            i++;
-            if (hasKeyword(sql, IF, i)) {
-                countIf++;
-            } else if (0 < countIf && hasKeyword(sql, END, i)) {
-                countIf--;
-                index = i;
-            } else if (0 == countIf && (hasKeyword(sql, ELSE_IF, i) || hasKeyword(sql, ELSE, i))) {
-                break;
+            if (HASH == c) {
+                if (hasKeyword(sql, HASH_IF, i)) {
+                    countIf++;
+                } else if (0 < countIf && hasKeyword(sql, HASH_END, i)) {
+                    countIf--;
+                    index = i;
+                } else if (0 == countIf && (hasKeyword(sql, HASH_ELSE_IF, i)
+                        || hasKeyword(sql, HASH_ELSE, i)
+                        || hasKeyword(sql, HASH_END, i))) {
+                    break;
+                }
             }
         }
         return index;
@@ -346,7 +371,7 @@ public abstract class EormSupport {
     }
 
     /**
-     * 获取 #xxx (Expression)
+     * 获取 #if (Expression)
      *
      * @param sql 模版
      * @param i   索引
@@ -367,6 +392,7 @@ public abstract class EormSupport {
             if (')' == c) {
                 counter--;
                 if (0 == counter) {
+                    i++;
                     break;
                 }
             }
@@ -376,25 +402,6 @@ public abstract class EormSupport {
             }
         }
         return new Expression(i, el.toString());
-    }
-
-
-    /**
-     * 获取接下来的字符串
-     *
-     * @param source 原字符串
-     * @param start  开始索引
-     * @param length 长度
-     * @return 自定索引
-     */
-    private static String getNextLengthString(String source, int start, int length) {
-        if (start + length > source.length()) {
-            // 越界
-
-        }
-
-        return null;
-
     }
 
 }

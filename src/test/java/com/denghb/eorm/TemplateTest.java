@@ -19,16 +19,18 @@ public class TemplateTest {
     public void test1() {
 
         Map<String, Object> params = new HashMap<String, Object>();
-        params.put("v", "a");
+        params.put("v", "b");
 
         String sql1 = ""/*{
             #if (#v == 'a')
                 aa
-            #elseIf (#v == 'b')
+            #elseIf (#v == 'b')\
                 bb
-            #else
+            #elseIf (#v == 'c')
                 cc
-            #end
+            #else
+                dd
+            #end\
         }*/;
 
         sql1 = EormSupport.parse(sql1, params);
@@ -42,20 +44,32 @@ public class TemplateTest {
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("v", "b");
         String sql = ""/*{
-            #if (#v == 'a')
+            #if (#v == 'a'    )
                 a
 
             #elseIf (#v == 'b')
                 b
-                #if (#v == '2')
+                #if (#v == '2' )
                     bb
+                #else
                 #end
             #else
                 c
-                #if (#v == '3')
+                #if ( #v == '3' )
                     cc
+                    #if ( #v == '2' )
+                        bb
+                    #elseIf ( #v == 'b' )
+                        b
+                        #if (#v == '2'    )
+                            bb
+                        #end
+                    #else\
+                    #end
                 #end
             #end
+
+            asds
         }*/;
 
         sql = EormSupport.parse(sql, params);
