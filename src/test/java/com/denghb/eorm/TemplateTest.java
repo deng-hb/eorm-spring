@@ -24,7 +24,7 @@ public class TemplateTest {
         String sql1 = ""/*{
             #if (#v == 'a')
                 aa
-            #elseIf (#v == 'b')\
+            #elseIf (#v == 'b' )\
                 bb
             #elseIf (#v == 'c')
                 cc
