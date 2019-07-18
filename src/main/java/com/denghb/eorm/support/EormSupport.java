@@ -210,14 +210,14 @@ public abstract class EormSupport {
             seContext.setVariables(params);
         }
         StringBuilder ss = new StringBuilder();
-        int sqlLength = sql.length();
-        for (int i = 0; i < sqlLength; i++) {
+
+        for (int i = 0; i < sql.length(); i++) {
             char c = sql.charAt(i);
             // a${b}c > abc
             if ($ == c && '{' == sql.charAt(i + 1)) {
                 i += 2;
                 StringBuilder name = new StringBuilder();
-                for (; i < sqlLength; i++) {
+                for (; i < sql.length(); i++) {
                     c = sql.charAt(i);
                     if (' ' == c) {
                         continue;
@@ -229,7 +229,16 @@ public abstract class EormSupport {
                 }
                 Object object = params.get(name.toString());
                 ss.append(object);// 只当成字符串拼接
-            } else if (HASH == c) {
+            } else {
+                ss.append(c);
+            }
+        }
+        sql = ss.toString();
+        ss = new StringBuilder();
+        int sqlLength = sql.length();
+        for (int i = 0; i < sqlLength; i++) {
+            char c = sql.charAt(i);
+            if (HASH == c) {
                 i = parseIfElseIfElseEnd(sql, sqlLength, i, ss, seContext);
             } else {
                 ss.append(c);
@@ -278,9 +287,12 @@ public abstract class EormSupport {
      * @return
      */
     private static int parseIfElseIfElseEnd(String sql, int sqlLength, int i, StringBuilder ss, StandardEvaluationContext seContext) {
-
         if (!hasNextHashIfEnd(sql, sqlLength, i)) {
             return i;
+        }
+        char c = sql.charAt(i);
+        if (')' == c) {
+            i++;// 递归会用到 ? ? ?
         }
 
         boolean append = true;
@@ -290,7 +302,7 @@ public abstract class EormSupport {
 
         int j = i;
         for (; j < sqlLength; j++) {
-            char c = sql.charAt(j);
+            c = sql.charAt(j);
             if (HASH != c) {
                 if (append) {
                     ss.append(c);
@@ -300,8 +312,9 @@ public abstract class EormSupport {
             // #if
             if (hasNextKeyword(sql, sqlLength, HASH_IF, j)) {
                 j += 3;
-                Expression e = getExpression(sql, sqlLength, j);
+                Expression e = getExpression(sql, HASH_IF, sqlLength, j);
                 j = e.getEndIndex();
+
                 append = SpEL.parseExpression(e.getContent()).getValue(seContext, Boolean.class);
                 _if = append;
 
@@ -316,10 +329,11 @@ public abstract class EormSupport {
             else if (hasNextKeyword(sql, sqlLength, HASH_ELSE_IF, j)) {
                 j += 7;
                 if (_if || _elseIf) {
+                    j = ignoreInternalIfEnd(sql, sqlLength, j);
                     append = false;
                     continue;
                 }
-                Expression e = getExpression(sql, sqlLength, j);
+                Expression e = getExpression(sql, HASH_ELSE_IF, sqlLength, j);
                 j = e.getEndIndex();
                 append = SpEL.parseExpression(e.getContent()).getValue(seContext, Boolean.class);
                 _elseIf = append;
@@ -333,12 +347,14 @@ public abstract class EormSupport {
             }
             // #else
             else if (hasNextKeyword(sql, sqlLength, HASH_ELSE, j)) {
-                j += 5;
+                j += 4;
                 if (_if || _elseIf) {
+                    j = ignoreInternalIfEnd(sql, sqlLength, j);
                     append = false;
                     continue;
                 }
                 j = parseIfElseIfElseEnd(sql, sqlLength, j, ss, seContext);
+                append = true;
                 continue;
             }
             // #end
@@ -412,17 +428,21 @@ public abstract class EormSupport {
     /**
      * 获取 #if (Expression)
      *
-     * @param sql 模版
-     * @param i   索引
+     * @param sql    模版
+     * @param syntax 语法
+     * @param i      索引
      * @return Expression
      */
-    private static Expression getExpression(String sql, int sqlLength, int i) {
+    private static Expression getExpression(String sql, String syntax, int sqlLength, int i) {
 
         StringBuilder el = new StringBuilder();
         int counter = 0;// `(` 计数器
         int j = i;
         for (; j < sqlLength; j++) {
             char c = sql.charAt(j);
+            if (0 == counter && c != ' ' && c != '(') {
+                throw new EormException(syntax + c + " Syntax fail");
+            }
             if ('(' == c) {
                 counter++;
                 if (1 == counter) {
