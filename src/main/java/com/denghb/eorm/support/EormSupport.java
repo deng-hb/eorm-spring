@@ -174,7 +174,8 @@ public abstract class EormSupport {
         boolean isBlank = false;
         boolean isQuote = false;
         StringBuilder ss = new StringBuilder();
-        for (int i = 0; i < sql.length(); i++) {
+        int sqlLength = sql.length();
+        for (int i = 0; i < sqlLength; i++) {
 
             char c = sql.charAt(i);
             if ('\'' == c) {
@@ -189,7 +190,10 @@ public abstract class EormSupport {
             }
             if (('\n' == c || '\r' == c || '\t' == c) && !isQuote) {
                 int newStrLength = ss.length();
-                if (newStrLength > 0 && ' ' != ss.charAt(newStrLength - 1)) {
+                // 新SQL前面不是空格，老SQL后面不是空格给补一个空格
+                int nextI = i + 1;
+                if (newStrLength > 0 && ' ' != ss.charAt(newStrLength - 1)
+                        && sqlLength > nextI && ' ' != sql.charAt(nextI)) {
                     ss.append(' ');
                 }
                 continue;

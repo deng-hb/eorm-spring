@@ -67,7 +67,6 @@ public abstract class EormAbstractImpl implements Eorm {
     public <T> List<T> select(Class<T> clazz, String sql, Object... args) {
         EormTraceSupport.start();
         Trace trace = EormTraceSupport.get();
-        sql = EormSupport.format(sql, args);
         String tid = trace.getId();
         int size = 0;
         log.debug(MessageFormat.format("{0} -> ({1})", trace.getStackTraceElement(), tid));
@@ -84,6 +83,8 @@ public abstract class EormAbstractImpl implements Eorm {
                 params = ReflectUtils.objectToMap(object);
             }
             sql = EormSupport.parse(sql, params);
+
+            sql = EormSupport.format(sql, args);
             log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, params));
             log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
 
@@ -94,6 +95,8 @@ public abstract class EormAbstractImpl implements Eorm {
             }
             size = null != list ? list.size() : 0;
         } else {
+
+            sql = EormSupport.format(sql, args);
             log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
             log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
 
