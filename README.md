@@ -8,14 +8,32 @@
 <dependency>
     <groupId>com.denghb</groupId>
     <artifactId>eorm-spring</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
 </dependency>
 ```
 
-### Java Bean 生成工具
+### Example
+```java
+String sql = ""/*{
+    select count(*) from tb_user u where u.deleted = 0
+    #if (null != #nickName)
+        and u.nick_name like concat('%', :nickName, '%')
+    #elseIf (null != #openId)
+        and u.openId = :openId
+    #end 
+}*/;
+Integer count = db.selectOne(Integer.class, sql, new HashMap<String, String>() {{
+    put("nickName", "张三");
+}});
+
+System.out.println(count);
+```
+
+
+### Java Entity 生成工具
 [eorm-mysql-support.jar](./eorm-mysql-support.jar)
 
 
-配合`IntelliJ IDEA` `EOrm` 插件食用更佳。
+配合`IntelliJ IDEA` `Eorm` 插件食用更佳。
 
 
