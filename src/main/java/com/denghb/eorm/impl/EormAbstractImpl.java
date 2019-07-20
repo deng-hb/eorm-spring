@@ -82,10 +82,9 @@ public abstract class EormAbstractImpl implements Eorm {
             } else {
                 params = ReflectUtils.objectToMap(object);
             }
-            sql = EormSupport.parse(sql, params);
-
-            sql = EormSupport.format(sql, args);
             log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, params));
+            sql = EormSupport.parse(sql, params);
+            sql = EormSupport.format(sql, args);
             log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
 
             if (ReflectUtils.isSingleClass(clazz)) {
@@ -96,8 +95,8 @@ public abstract class EormAbstractImpl implements Eorm {
             size = null != list ? list.size() : 0;
         } else {
 
-            sql = EormSupport.format(sql, args);
             log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
+            sql = EormSupport.format(sql, args);
             log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
 
             if (null == args || 0 == args.length || !sql.contains("?")) {
