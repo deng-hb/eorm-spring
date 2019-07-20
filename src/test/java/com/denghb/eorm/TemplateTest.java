@@ -17,9 +17,25 @@ public class TemplateTest {
     private Logger log = Logger.getLogger(TemplateTest.class);
 
     @Test
+    public void s() {
+
+        String sql = ""/*{
+            select * from tb_user where deleted = 0
+            where name = '     nihao '
+
+            order by `id` desc limit 0,20
+        }*/;
+        System.out.println(EormSupport.format(sql));
+    }
+
+    @Test
     public void t1() {
 
-        doOut("1");
+        doOut("#if(#c==1)q#else2#end");
+
+
+        doOut("${p}");
+        doOut("2");
         doOut("a");
         doOut("b");
         doOut("c");
@@ -34,8 +50,11 @@ public class TemplateTest {
         String input = ""/*{#if(#p=='a')a#elseIf(#p=='b')#if(#p=='c')#elseIf(1==2)#elseb#end#elseIf(#p=='c')c#else${p}#end}*/;
 
         String output = EormSupport.parse(input, params);
-        System.out.println(output);
-        Assert.assertTrue(p.equals(output));
+        log.info(output);
+        if (!p.contains("#")) {
+            Assert.assertEquals(p, output);
+        }
+
     }
 
     @Test
@@ -64,7 +83,7 @@ public class TemplateTest {
                 dd
             #end\2
         }*/;
-
+        sql1 = sql1.replaceAll("\\s+", " ");
         sql1 = EormSupport.parse(sql1, params);
         log.info(sql1);
     }

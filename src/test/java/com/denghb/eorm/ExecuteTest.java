@@ -11,7 +11,9 @@ public class ExecuteTest extends AppTest {
     @Test
     public void test1() {
         String sql = ""/*{
-            update tb_user set created_time = now() where id in (select id from (select id from tb_user limit 10) t)
+            update tb_user set created_time = now() where id in (
+                select id from (select id from tb_user limit 10) t
+            )
         }*/;
         int res = db.execute(sql);
         log.info(res);

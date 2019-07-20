@@ -161,15 +161,45 @@ public abstract class EormSupport {
     }
 
     /**
-     * 美化分析SQL
+     * 美化SQL
+     * 去掉多余的换行和空格
      *
-     * @param sql  原SQL
-     * @param args 参数
+     * @param sql 原SQL
      * @return 美化后的SQL
      */
-    public static String parse(String sql, Object... args) {
+    public static String format(String sql, Object... args) {
+        if (null == sql) {
+            return null;
+        }
+        boolean isBlank = false;
+        boolean isQuote = false;
+        StringBuilder ss = new StringBuilder();
+        for (int i = 0; i < sql.length(); i++) {
 
-        return sql;
+            char c = sql.charAt(i);
+            if ('\'' == c) {
+                isQuote = !isQuote;
+            }
+            if (' ' == c && !isQuote) {
+                if (!isBlank) {
+                    isBlank = true;
+                    ss.append(c);
+                }
+                continue;
+            }
+            if (('\n' == c || '\r' == c || '\t' == c) && !isQuote) {
+                int newStrLength = ss.length();
+                if (newStrLength > 0 && ' ' != ss.charAt(newStrLength - 1)) {
+                    ss.append(' ');
+                }
+                continue;
+            }
+
+            ss.append(c);
+            isBlank = false;
+        }
+
+        return ss.toString().trim();
     }
 
     private static final char $ = '$';
@@ -291,7 +321,7 @@ public abstract class EormSupport {
             return i;
         }
         char c = sql.charAt(i);
-        if (')' == c) {
+        if (')' == c || 'e' == c) {
             i++;// 递归会用到 ? ? ?
         }
 
