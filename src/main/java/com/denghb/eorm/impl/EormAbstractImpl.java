@@ -32,8 +32,6 @@ import java.util.Map;
  */
 public abstract class EormAbstractImpl implements Eorm {
 
-    protected Log log = LogFactory.getLog(this.getClass());
-
     protected JdbcTemplate jdbcTemplate;
 
     protected NamedParameterJdbcTemplate namedParameterJdbcTemplate;
@@ -50,7 +48,9 @@ public abstract class EormAbstractImpl implements Eorm {
         Trace trace = EormTraceSupport.get();
         sql = EormSupport.format(sql, args);
         String tid = trace.getId();
-        log.debug(MessageFormat.format("{0} -> ({1})", trace.getStackTraceElement(), tid));
+
+        Log log = LogFactory.getLog(trace.getLogName());
+        log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
         log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
         log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
 
@@ -68,8 +68,11 @@ public abstract class EormAbstractImpl implements Eorm {
         EormTraceSupport.start();
         Trace trace = EormTraceSupport.get();
         String tid = trace.getId();
+
+        Log log = LogFactory.getLog(trace.getLogName());
+        log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
+
         int size = 0;
-        log.debug(MessageFormat.format("{0} -> ({1})", trace.getStackTraceElement(), tid));
         List<T> list = null;
         if (sql.contains(":") && null != args && 1 == args.length && !ReflectUtils.isSingleClass(args[0].getClass())) {// namedParameter
             Map<String, Object> params = null;
@@ -194,8 +197,8 @@ public abstract class EormAbstractImpl implements Eorm {
         if (pkColumns.size() == 1 && null == primaryKeyValue && Number.class.isAssignableFrom(primaryKeyFiled.getType())) {
             Trace trace = EormTraceSupport.get();
             String tid = trace.getId();
-
-            log.debug(MessageFormat.format("{0} -> ({1})", trace.getStackTraceElement(), tid));
+            Log log = LogFactory.getLog(trace.getLogName());
+            log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
             log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
             log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
 

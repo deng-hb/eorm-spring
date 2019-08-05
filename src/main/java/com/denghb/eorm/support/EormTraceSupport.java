@@ -31,10 +31,12 @@ public class EormTraceSupport {
 
             StackTraceElement[] stackTraceElements = new Throwable().getStackTrace();
             // 不是 @see PACKAGE_NAME 的才塞进来
-            for (StackTraceElement stackTraceElement : stackTraceElements) {
-                String className = stackTraceElement.getClassName();
+            for (StackTraceElement ste : stackTraceElements) {
+                String className = ste.getClassName();
                 if (!className.startsWith(PACKAGE_NAME) && !className.startsWith(PACKAGE_NAME2)) {
-                    trace.setStackTraceElement(stackTraceElement);
+                    trace.setLogName(className);
+                    String logMethod = String.format("%s(%s:%d)", ste.getMethodName(), ste.getFileName(), ste.getLineNumber());
+                    trace.setLogMethod(logMethod);
                     break;
                 }
             }
