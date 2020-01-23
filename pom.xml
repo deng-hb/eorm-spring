@@ -6,7 +6,7 @@
 
     <groupId>com.denghb</groupId>
     <artifactId>eorm-spring</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 
     <name>eorm-spring</name>
     <url>https://github.com/deng-hb/eorm-spring</url>
@@ -182,7 +182,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.5</version>
+                <version>1.6</version>
                 <executions>
                     <execution>
                         <id>sign-artifacts</id>

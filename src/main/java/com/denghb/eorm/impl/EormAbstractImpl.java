@@ -41,7 +41,6 @@ public abstract class EormAbstractImpl implements Eorm {
         this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
     }
 
-
     @Override
     public int execute(String sql, Object... args) {
         EormTraceSupport.start();
@@ -50,14 +49,33 @@ public abstract class EormAbstractImpl implements Eorm {
         String tid = trace.getId();
 
         Log log = LogFactory.getLog(trace.getLogName());
-        log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
-        log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
-        log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+        boolean logDebug = log.isDebugEnabled();
+        if (logDebug) {
+            log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
+        }
+        int affected = 0;
 
-        int affected = jdbcTemplate.update(sql, args);
+        if (sql.contains(":") && null != args && 1 == args.length && !ReflectUtils.isSingleClass(args[0].getClass())) {// namedParameter
+            Object arg = args[0];
+            Map<String, Object> params = ReflectUtils.objectToMap(arg);
+            sql = EormSupport.parse(sql, params);
 
-        log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, affected));
-        log.debug(MessageFormat.format("({0}) <- Taking      :{1}ms", tid, (System.currentTimeMillis() - trace.getStartTime())));
+            if (logDebug) {
+                log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
+                log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+            }
+            affected = namedParameterJdbcTemplate.update(sql, params);
+        } else {
+            if (logDebug) {
+                log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
+                log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+            }
+            affected = jdbcTemplate.update(sql, args);
+        }
+        if (logDebug) {
+            log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, affected));
+            log.debug(MessageFormat.format("({0}) <- Taking      :{1}ms", tid, (System.currentTimeMillis() - trace.getStartTime())));
+        }
         EormTraceSupport.end();
 
         return affected;
@@ -70,25 +88,26 @@ public abstract class EormAbstractImpl implements Eorm {
         String tid = trace.getId();
 
         Log log = LogFactory.getLog(trace.getLogName());
-        log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
+        boolean logDebug = log.isDebugEnabled();
+        if (logDebug) {
+            log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
+        }
 
         int size = 0;
         List<T> list = null;
         if (sql.contains(":") && null != args && 1 == args.length && !ReflectUtils.isSingleClass(args[0].getClass())) {// namedParameter
-            Map<String, Object> params = null;
             Object object = args[0];
             if (null == object) {
                 throw new EormException("args is not null");
             }
-            if (object instanceof Map) {
-                params = (Map<String, Object>) object;
-            } else {
-                params = ReflectUtils.objectToMap(object);
-            }
-            log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, params));
+            Map<String, Object> params = ReflectUtils.objectToMap(object);
             sql = EormSupport.parse(sql, params);
             sql = EormSupport.format(sql, args);
-            log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+
+            if (logDebug) {
+                log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, params));
+                log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+            }
 
             if (ReflectUtils.isSingleClass(clazz)) {
                 list = namedParameterJdbcTemplate.queryForList(sql, params, clazz);
@@ -97,10 +116,12 @@ public abstract class EormAbstractImpl implements Eorm {
             }
             size = null != list ? list.size() : 0;
         } else {
-
-            log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
             sql = EormSupport.format(sql, args);
-            log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+
+            if (logDebug) {
+                log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
+                log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+            }
 
             if (null == args || 0 == args.length || !sql.contains("?")) {
                 if (ReflectUtils.isSingleClass(clazz)) {
@@ -117,8 +138,11 @@ public abstract class EormAbstractImpl implements Eorm {
             }
             size = null != list ? list.size() : 0;
         }
-        log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, size));
-        log.debug(MessageFormat.format("({0}) <- Taking      :{1}ms", tid, (System.currentTimeMillis() - trace.getStartTime())));
+
+        if (logDebug) {
+            log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, size));
+            log.debug(MessageFormat.format("({0}) <- Taking      :{1}ms", tid, (System.currentTimeMillis() - trace.getStartTime())));
+        }
         EormTraceSupport.end();
 
         return list;
@@ -198,10 +222,13 @@ public abstract class EormAbstractImpl implements Eorm {
             Trace trace = EormTraceSupport.get();
             String tid = trace.getId();
             Log log = LogFactory.getLog(trace.getLogName());
-            log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
-            log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
-            log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+            boolean logDebug = log.isDebugEnabled();
 
+            if (logDebug) {
+                log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
+                log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
+                log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+            }
             KeyHolder keyHolder = new GeneratedKeyHolder();
             final Column finalPrimaryKeyColumn = primaryKeyColumn;
             res = jdbcTemplate.update(new PreparedStatementCreator() {
@@ -226,8 +253,10 @@ public abstract class EormAbstractImpl implements Eorm {
                 throw new EormException("insert set primaryKey[" + primaryKeyColumn.getName() + "] value fail");
             }
 
-            log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, res));
-            log.debug(MessageFormat.format("({0}) <- Taking      :{1}ms", tid, (System.currentTimeMillis() - trace.getStartTime())));
+            if (logDebug) {
+                log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, res));
+                log.debug(MessageFormat.format("({0}) <- Taking      :{1}ms", tid, (System.currentTimeMillis() - trace.getStartTime())));
+            }
             EormTraceSupport.end();
         } else {
             res = execute(sql, args);
@@ -302,11 +331,8 @@ public abstract class EormAbstractImpl implements Eorm {
         EormTraceSupport.start();
         Table table = EormSupport.load(clazz);
 
-        StringBuilder sb = new StringBuilder("delete from ");
-        sb.append(table.getName());
-        sb.append(EormSupport.loadWherePrimaryKey(table));
-
-        String sql = sb.toString();
+        String sql = String.format("delete from %s %s", table.getName(),
+                EormSupport.loadWherePrimaryKey(table));
         int res = this.execute(sql, ids);
 
         if (1 != res) {
@@ -330,13 +356,9 @@ public abstract class EormAbstractImpl implements Eorm {
         // 表名
         Table table = EormSupport.load(clazz);
 
-        StringBuilder sb = new StringBuilder("select ");
-        sb.append(EormSupport.loadAllColumnName(table));
-        sb.append(" from ");
-        sb.append(table.getName());
-        sb.append(EormSupport.loadWherePrimaryKey(table));
-
-        return selectOne(clazz, sb.toString(), ids);
+        String sql = String.format("select %s from %s %s", EormSupport.loadAllColumnName(table),
+                table.getName(), EormSupport.loadWherePrimaryKey(table));
+        return selectOne(clazz, sql, ids);
     }
 
 }

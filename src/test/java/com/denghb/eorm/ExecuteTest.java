@@ -1,5 +1,6 @@
 package com.denghb.eorm;
 
+import com.denghb.eorm.domain.User;
 import org.junit.Test;
 
 /**
@@ -16,6 +17,24 @@ public class ExecuteTest extends AppTest {
             )
         }*/;
         int res = db.execute(sql);
+        log.info(res);
+    }
+
+    @Test
+    public void test2() {
+        String sql = ""/*{
+            update tb_user set created_time = now(), mobile = :mobile where id = :id
+            #if (null != #gender)
+                and gender = :gender
+            #end
+        }*/;
+
+        User user = new User();
+        user.setId(1);
+        user.setMobile("123423423");
+
+        int res = db.execute(sql,user);
+        assert res == 1;
         log.info(res);
     }
 }

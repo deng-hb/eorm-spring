@@ -153,9 +153,7 @@ public class EormMySQLImpl extends EormAbstractImpl implements Eorm {
                 }
                 sql.append(" order by ");
 
-                sql.append('`');
                 sql.append(sorts[sortIndex]);
-                sql.append('`');
 
                 // 排序方式
                 if (paging.isDesc()) {
