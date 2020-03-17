@@ -10,6 +10,10 @@ public class PagingResult<T> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
+	public PagingResult() {
+
+	}
+
 	public PagingResult(Paging paging) {
 		this.paging = paging;
 	}

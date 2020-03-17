@@ -2,13 +2,14 @@
 
 这是一个基于Spring `JdbcTemplate` 和 `NamedParameterJdbcTemplate` 的ORM框架。
 
+Ta的前身是[dbhelper](https://github.com/deng-hb/dbhelper)，项目需要`spring 3.x`以上版本，还依赖项目[multi-line](https://github.com/deng-hb/multi-line)一个Java多行文本支持类。
 
 ### Maven依赖
 ```xml
 <dependency>
     <groupId>com.denghb</groupId>
     <artifactId>eorm-spring</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 </dependency>
 ```
 
@@ -89,9 +90,21 @@ System.out.println(count);
 ```
 
 ### Java Entity 生成工具
-[eorm-mysql-support.jar](./eorm-mysql-support.jar)
+Idea IDE下载[Eorm](https://plugins.jetbrains.com/plugin/12618-eorm)插件，项目开源地址[eorm-idea-plugin](https://github.com/deng-hb/eorm-idea-plugin)
+
+![Eorm Entity Generator](./eorm-idea-plugin.png)
+
+下载后打开方式
+```
+Menu > Code > Eorm Entity Generator
+```
+
+Eorm还提供多行SQL语法高亮，SQL提示
+
+![eorm-smart-tip](http://static.denghb.com/eorm-smart-tip.gif)
 
 
-配合`IntelliJ IDEA` `Eorm` 插件食用更佳。
+使用中有任何问题欢迎提[issues](https://github.com/deng-hb/eorm-spring/issues)
+
 
 

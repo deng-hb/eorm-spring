@@ -67,6 +67,10 @@ public abstract class Paging implements Serializable {
      */
     private List<Object> params = new ArrayList<Object>();
 
+    public Paging() {
+        
+    }
+
     public long getTotal() {
         return total;
     }
@@ -109,7 +113,6 @@ public abstract class Paging implements Serializable {
 
     /**
      * 设置需要排序的数据库字段
-     *
      */
     public abstract String[] getSorts();
 
