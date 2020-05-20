@@ -1,4 +1,4 @@
-package com.denghb.eorm.support;
+package com.denghb.eorm.template;
 
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * @author denghb
  */
-public class EOrmQueryTemplateParser {
+public class EQueryTemplate {
 
     // 性能？
     private static SpelExpressionParser SpEL = new SpelExpressionParser();

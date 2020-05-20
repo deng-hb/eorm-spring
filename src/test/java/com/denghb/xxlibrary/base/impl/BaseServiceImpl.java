@@ -1,13 +1,13 @@
 package com.denghb.xxlibrary.base.impl;
 
-import com.denghb.eorm.EOrm;
-import com.denghb.eorm.EOrmException;
+import com.denghb.eorm.Eorm;
+import com.denghb.eorm.EormException;
 import com.denghb.eorm.page.EPageReq;
 import com.denghb.eorm.page.EPageRes;
-import com.denghb.eorm.support.EOrmTableParser;
+import com.denghb.eorm.support.ETableColumnParser;
 import com.denghb.eorm.support.domain.Column;
 import com.denghb.eorm.support.domain.Table;
-import com.denghb.eorm.utils.ReflectUtils;
+import com.denghb.eorm.utils.EReflectUtils;
 import com.denghb.xxlibrary.base.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BaseServiceImpl<T> implements BaseService<T> {
 
     @Autowired
-    private EOrm db;
+    private Eorm db;
 
     // 固定SQL缓存
     private final static Map<String, String> SQL_CACHE = new ConcurrentHashMap<String, String>();
@@ -47,10 +47,10 @@ public class BaseServiceImpl<T> implements BaseService<T> {
 
     @Override
     public void save(T domain) {
-        Table table = EOrmTableParser.load(getDomainClass());
+        Table table = ETableColumnParser.load(getDomainClass());
         Field field = table.getPrimaryKeyColumn().getField();
 
-        Object idValue = ReflectUtils.getFieldValue(field, domain);
+        Object idValue = EReflectUtils.getFieldValue(field, domain);
         if (null == idValue) {
             insert(domain);
         } else {
@@ -60,23 +60,23 @@ public class BaseServiceImpl<T> implements BaseService<T> {
 
     @Override
     public void updateById(T domain) {
-        Table table = EOrmTableParser.load(getDomainClass());
+        Table table = ETableColumnParser.load(getDomainClass());
         List<Object> values = new ArrayList<Object>();
 
         Column primaryKeyColumn = table.getPrimaryKeyColumn();
-        Object primaryKeyValue = ReflectUtils.getFieldValue(primaryKeyColumn.getField(), domain);
+        Object primaryKeyValue = EReflectUtils.getFieldValue(primaryKeyColumn.getField(), domain);
 
         // 版本号自动++
         Object versionValue = null;
 
         StringBuilder ssb = new StringBuilder();
         for (Column column : table.getColumns()) {
-            Object value = ReflectUtils.getFieldValue(column.getField(), domain);
+            Object value = EReflectUtils.getFieldValue(column.getField(), domain);
             if (null != value && "version".equals(column.getName())) {
                 versionValue = value;
                 continue;
             }
-            EOrmTableParser.validate(column, value);
+            ETableColumnParser.validate(column, value);
             if (null == value) {
                 continue;
             }
@@ -109,7 +109,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         final Object[] args = values.toArray();
         int res = db.execute(sql, args);
         if (1 != res) {
-            throw new EOrmException("update fail");
+            throw new EormException("update fail");
         }
     }
 
@@ -119,13 +119,13 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         String key = clazz.getName() + "#deleteById";
         String sql = SQL_CACHE.get(key);
         if (null == sql) {
-            Table table = EOrmTableParser.load(clazz);
+            Table table = ETableColumnParser.load(clazz);
             sql = "update " + table.getName() + " set deleted = 1 where id = ? and deleted = 0";
             SQL_CACHE.put(key, sql);
         }
         int res = db.execute(sql, id);
         if (1 != res) {
-            throw new EOrmException("delete fail");
+            throw new EormException("delete fail");
         }
     }
 
@@ -136,7 +136,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         String sql = SQL_CACHE.get(key);
         if (null == sql) {
             // 表名
-            Table table = EOrmTableParser.load(clazz);
+            Table table = ETableColumnParser.load(clazz);
 
             Column primaryKeyColumn = table.getPrimaryKeyColumn();
 
@@ -174,7 +174,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         String sql = SQL_CACHE.get(key);
         if (null == sql) {
 
-            Table table = EOrmTableParser.load(getDomainClass());
+            Table table = ETableColumnParser.load(getDomainClass());
 
             StringBuilder sb = new StringBuilder("select ");
 

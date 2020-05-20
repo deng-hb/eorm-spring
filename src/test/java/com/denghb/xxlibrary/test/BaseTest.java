@@ -1,6 +1,6 @@
 package com.denghb.xxlibrary.test;
 
-import com.denghb.eorm.EOrm;
+import com.denghb.eorm.Eorm;
 import org.junit.Before;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -17,13 +17,13 @@ public class BaseTest {
     protected ApplicationContext ctx;
     protected NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     protected JdbcTemplate jdbcTemplate;
-    protected EOrm db;
+    protected Eorm db;
 
     @Before
     public void before() {
         ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
         jdbcTemplate = ctx.getBean(JdbcTemplate.class);
         namedParameterJdbcTemplate = ctx.getBean(NamedParameterJdbcTemplate.class);
-        db = ctx.getBean(EOrm.class);
+        db = ctx.getBean(Eorm.class);
     }
 }

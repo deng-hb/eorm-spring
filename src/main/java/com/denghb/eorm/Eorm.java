@@ -1,8 +1,5 @@
 package com.denghb.eorm;
 
-import com.denghb.eorm.page.EPageReq;
-import com.denghb.eorm.page.EPageRes;
-
 import java.util.List;
 
 /**
@@ -10,7 +7,7 @@ import java.util.List;
  *
  * @author denghb
  */
-public interface EOrm {
+public interface Eorm {
 
     /**
      * 执行一条SQL
@@ -63,7 +60,7 @@ public interface EOrm {
      * @param id
      * @param <T>
      */
-    <T> void deleteById(Class<T> clazz, Object id);
+    <T> void deleteById(Class<T> clazz, Object... id);
 
     /**
      * 查询一个对象
@@ -84,17 +81,6 @@ public interface EOrm {
      * @param <T>
      * @return T
      */
-    <T> T selectById(Class<T> clazz, Object id);
-
-    /**
-     * 分页查询
-     *
-     * @param clazz
-     * @param sql
-     * @param pageReq
-     * @param <T>
-     * @return EPageRes<T>
-     */
-    <T> EPageRes<T> selectPage(Class<T> clazz, String sql, EPageReq pageReq);
+    <T> T selectById(Class<T> clazz, Object... id);
 
 }

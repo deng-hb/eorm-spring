@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 反射工具类
  */
-public class ReflectUtils {
+public class EReflectUtils {
 
     private final static Map<String, Set<Field>> FIELD_CACHE = new ConcurrentHashMap<String, Set<Field>>();
 

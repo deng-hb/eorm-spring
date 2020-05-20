@@ -1,7 +1,7 @@
 package com.denghb.xxlibrary.domain;
 
-import com.denghb.eorm.annotation.EColumn;
-import com.denghb.eorm.annotation.ETable;
+import com.denghb.eorm.annotation.Ecolumn;
+import com.denghb.eorm.annotation.Etable;
 import io.swagger.annotations.ApiModelProperty;
 
 /**
@@ -29,45 +29,45 @@ CREATE TABLE `book` (
  * @generateTime Sat Jun 29 22:13:33 CST 2019
  */
 @lombok.Data()
-@ETable(name="book", database="xxlibrary")
+@Etable(name="book", database="xxlibrary")
 public class Book implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
 	@ApiModelProperty(value = "编号")
-	@EColumn(name="id", primaryKey = true, comment="编号")
+	@Ecolumn(name="id", primaryKey = true, comment="编号")
 	private Integer id;
 	
 	@ApiModelProperty(value = "书名")
-	@EColumn(name="title", comment="书名")
+	@Ecolumn(name="title", comment="书名")
 	private String title;
 	
 	@ApiModelProperty(value = "封面")
-	@EColumn(name="cover_url", comment="封面")
+	@Ecolumn(name="cover_url", comment="封面")
 	private String coverUrl;
 	
 	@ApiModelProperty(value = "作者")
-	@EColumn(name="author", comment="作者")
+	@Ecolumn(name="author", comment="作者")
 	private String author;
 	
 	@ApiModelProperty(value = "简介")
-	@EColumn(name="intro", comment="简介")
+	@Ecolumn(name="intro", comment="简介")
 	private String intro;
 	
 	@ApiModelProperty(value = "插入时间")
-	@EColumn(name="created_time", comment="插入时间")
+	@Ecolumn(name="created_time", comment="插入时间")
 	private java.util.Date createdTime;
 	
 	@ApiModelProperty(value = "更新时间")
-	@EColumn(name="updated_time", comment="更新时间")
+	@Ecolumn(name="updated_time", comment="更新时间")
 	private java.util.Date updatedTime;
 	
 	@ApiModelProperty(value = "逻辑删除")
-	@EColumn(name="deleted", comment="逻辑删除")
+	@Ecolumn(name="deleted", comment="逻辑删除")
 	private Integer deleted;
 	
 	@ApiModelProperty(value = "版本号")
-	@EColumn(name="version", comment="版本号")
+	@Ecolumn(name="version", comment="版本号")
 	private Integer version;
 	
 

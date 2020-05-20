@@ -1,7 +1,7 @@
 package com.denghb.xxlibrary.domain;
 
-import com.denghb.eorm.annotation.EColumn;
-import com.denghb.eorm.annotation.ETable;
+import com.denghb.eorm.annotation.Ecolumn;
+import com.denghb.eorm.annotation.Etable;
 import io.swagger.annotations.ApiModelProperty;
 
 /**
@@ -26,37 +26,37 @@ CREATE TABLE `read_record` (
  * @author denghb
  * @generateTime Sat Jun 29 21:15:58 CST 2019
  */
-@ETable(name="read_record", database="xxlibrary")
+@Etable(name="read_record", database="xxlibrary")
 public class ReadRecord implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
 	@ApiModelProperty(value = "ID")
-	@EColumn(name="id", primaryKey = true)
+	@Ecolumn(name="id", primaryKey = true)
 	private Integer id;
 	
 	@ApiModelProperty(value = "学生ID")
-	@EColumn(name="student_id")
+	@Ecolumn(name="student_id")
 	private Integer studentId;
 	
 	@ApiModelProperty(value = "书籍ID")
-	@EColumn(name="book_id")
+	@Ecolumn(name="book_id")
 	private String bookId;
 	
 	@ApiModelProperty(value = "插入时间")
-	@EColumn(name="created_time")
+	@Ecolumn(name="created_time")
 	private java.util.Date createdTime;
 	
 	@ApiModelProperty(value = "更新时间")
-	@EColumn(name="updated_time")
+	@Ecolumn(name="updated_time")
 	private java.util.Date updatedTime;
 	
 	@ApiModelProperty(value = "逻辑删除")
-	@EColumn(name="deleted")
+	@Ecolumn(name="deleted")
 	private Integer deleted;
 	
 	@ApiModelProperty(value = "版本号")
-	@EColumn(name="version")
+	@Ecolumn(name="version")
 	private Integer version;
 	
 	public Integer getId() {
