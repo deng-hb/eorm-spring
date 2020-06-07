@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Auther: denghb
+ * @author denghb
  * @Date: 2019-05-26 00:49
  */
 public class SelectTest extends BaseTest {

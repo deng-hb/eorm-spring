@@ -2,8 +2,6 @@ package com.denghb.xxlibrary.base.impl;
 
 import com.denghb.eorm.Eorm;
 import com.denghb.eorm.EormException;
-import com.denghb.eorm.page.EPageReq;
-import com.denghb.eorm.page.EPageRes;
 import com.denghb.eorm.support.ETableColumnParser;
 import com.denghb.eorm.support.domain.Column;
 import com.denghb.eorm.support.domain.Table;
@@ -48,10 +46,18 @@ public class BaseServiceImpl<T> implements BaseService<T> {
     @Override
     public void save(T domain) {
         Table table = ETableColumnParser.load(getDomainClass());
-        Field field = table.getPrimaryKeyColumn().getField();
+        boolean isInsert = true;
 
-        Object idValue = EReflectUtils.getFieldValue(field, domain);
-        if (null == idValue) {
+        List<Column> pkColumns = table.getPkColumns();
+        for (Column column : pkColumns) {
+            Field field = column.getField();
+            Object idValue = EReflectUtils.getFieldValue(field, domain);
+            if (null != idValue) {
+                isInsert = false;
+                break;
+            }
+        }
+        if (isInsert) {
             insert(domain);
         } else {
             updateById(domain);
@@ -63,14 +69,12 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         Table table = ETableColumnParser.load(getDomainClass());
         List<Object> values = new ArrayList<Object>();
 
-        Column primaryKeyColumn = table.getPrimaryKeyColumn();
-        Object primaryKeyValue = EReflectUtils.getFieldValue(primaryKeyColumn.getField(), domain);
 
         // 版本号自动++
         Object versionValue = null;
 
         StringBuilder ssb = new StringBuilder();
-        for (Column column : table.getColumns()) {
+        for (Column column : table.getOtherColumns()) {
             Object value = EReflectUtils.getFieldValue(column.getField(), domain);
             if (null != value && "version".equals(column.getName())) {
                 versionValue = value;
@@ -89,16 +93,18 @@ public class BaseServiceImpl<T> implements BaseService<T> {
             values.add(value);
         }
 
+        List<Column> pkColumns = table.getPkColumns();
+        for (Column column : pkColumns) {
+            Object pkValue = EReflectUtils.getFieldValue(column.getField(), domain);
+            values.add(pkValue);
+        }
+
         StringBuilder sb = new StringBuilder("update ");
         sb.append(table.getName());
         sb.append(" set ");
         sb.append(ssb);
         sb.append(", `version` = `version` + 1");
-        sb.append(" where ");
-        sb.append("`");
-        sb.append(primaryKeyColumn.getName());
-        sb.append("` = ?");
-        values.add(primaryKeyValue);
+        sb.append(ETableColumnParser.loadWherePrimaryKey(table));
         sb.append(" and `deleted` = 0 ");
         if (null != versionValue) {
             sb.append(" and `version` = ? ");
@@ -138,14 +144,9 @@ public class BaseServiceImpl<T> implements BaseService<T> {
             // 表名
             Table table = ETableColumnParser.load(clazz);
 
-            Column primaryKeyColumn = table.getPrimaryKeyColumn();
-
             StringBuilder sb = new StringBuilder("select ");
-            sb.append("`");
-            sb.append(table.getPrimaryKeyColumn().getName());
-            sb.append("`");
 
-            List<Column> columns = table.getColumns();
+            List<Column> columns = table.getAllColumns();
             for (Column column : columns) {
                 sb.append(",`");
                 sb.append(column.getName());
@@ -154,10 +155,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
 
             sb.append(" from ");
             sb.append(table.getName());
-            sb.append(" where ");
-            sb.append("`");
-            sb.append(primaryKeyColumn.getName());
-            sb.append("` = ?");
+            sb.append(ETableColumnParser.loadWherePrimaryKey(table));
             sb.append(" and `deleted` = 0 ");
 
             sql = sb.toString();
@@ -167,35 +165,4 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         return db.selectOne(clazz, sql, id);
     }
 
-    @Override
-    public EPageRes<T> selectPage(EPageReq req) {
-        Class<T> clazz = getDomainClass();
-        String key = clazz.getName() + "#selectPage";
-        String sql = SQL_CACHE.get(key);
-        if (null == sql) {
-
-            Table table = ETableColumnParser.load(getDomainClass());
-
-            StringBuilder sb = new StringBuilder("select ");
-
-            sb.append("`");
-            sb.append(table.getPrimaryKeyColumn().getName());
-            sb.append("`");
-
-            List<Column> columns = table.getColumns();
-            for (Column column : columns) {
-                sb.append(",`");
-                sb.append(column.getName());
-                sb.append("`");
-            }
-            sb.append(" from ");
-            sb.append(table.getName());
-            sb.append(" where ");
-            sb.append("`deleted` = 0 ");
-
-            sql = sb.toString();
-            SQL_CACHE.put(key, sql);
-        }
-        return db.selectPage(clazz, sql, req);
-    }
 }

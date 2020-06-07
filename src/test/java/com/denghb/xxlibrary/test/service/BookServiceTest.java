@@ -1,7 +1,5 @@
 package com.denghb.xxlibrary.test.service;
 
-import com.denghb.eorm.page.EPageReq;
-import com.denghb.eorm.page.EPageRes;
 import com.denghb.xxlibrary.domain.Book;
 import com.denghb.xxlibrary.service.BookService;
 import com.denghb.xxlibrary.test.BaseTest;
@@ -70,11 +68,4 @@ public class BookServiceTest extends BaseTest {
         log.info(book2);
     }
 
-    @Test
-    public void selectPage() {
-        EPageReq req = new EPageReq();
-        req.setPageSize(100);
-        EPageRes<Book> res = bookService.selectPage(req);
-        log.info(res);
-    }
 }

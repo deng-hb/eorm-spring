@@ -1,7 +1,7 @@
 package com.denghb;
 
 /**
- * @Auther: denghb
+ * @author denghb
  * @Date: 2019-05-22 00:27
  */
 public class MultiLineTest {

@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 /**
- * @Auther: denghb
+ * @author denghb
  * @Date: 2019-05-26 00:49
  */
 public class BaseTest {

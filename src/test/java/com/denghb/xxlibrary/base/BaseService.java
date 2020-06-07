@@ -1,8 +1,6 @@
 package com.denghb.xxlibrary.base;
 
 
-import com.denghb.eorm.page.EPageReq;
-import com.denghb.eorm.page.EPageRes;
 
 /**
  * custom service example
@@ -21,5 +19,4 @@ public interface BaseService<T> {
 
     public T selectById(Object id);
 
-    public EPageRes<T> selectPage(EPageReq req);
 }

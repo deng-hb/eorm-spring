@@ -14,14 +14,18 @@ public class Table {
     private String name;
 
     /**
-     * 主键字（不考虑复合主键）
+     * 所有列
      */
-    private Column primaryKeyColumn;
+    private List<Column> allColumns = new ArrayList<Column>();
 
     /**
-     * 所有的列
+     * 主键列
      */
-    private List<Column> columns = new ArrayList<Column>();
+    private List<Column> pkColumns = new ArrayList<Column>();
+    /**
+     * 其他列
+     */
+    private List<Column> otherColumns = new ArrayList<Column>();
 
     public String getName() {
         return name;
@@ -31,19 +35,27 @@ public class Table {
         this.name = name;
     }
 
-    public Column getPrimaryKeyColumn() {
-        return primaryKeyColumn;
+    public List<Column> getPkColumns() {
+        return pkColumns;
     }
 
-    public void setPrimaryKeyColumn(Column primaryKeyColumn) {
-        this.primaryKeyColumn = primaryKeyColumn;
+    public void setPkColumns(List<Column> pkColumns) {
+        this.pkColumns = pkColumns;
     }
 
-    public List<Column> getColumns() {
-        return columns;
+    public List<Column> getAllColumns() {
+        return allColumns;
     }
 
-    public void setColumns(List<Column> columns) {
-        this.columns = columns;
+    public void setAllColumns(List<Column> allColumns) {
+        this.allColumns = allColumns;
+    }
+
+    public List<Column> getOtherColumns() {
+        return otherColumns;
+    }
+
+    public void setOtherColumns(List<Column> otherColumns) {
+        this.otherColumns = otherColumns;
     }
 }

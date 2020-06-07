@@ -5,7 +5,7 @@ import org.junit.Test;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @Auther: denghb
+ * @author denghb
  * @Date: 2019-05-26 00:49
  */
 public class DeleteByIdTest extends BaseTest {

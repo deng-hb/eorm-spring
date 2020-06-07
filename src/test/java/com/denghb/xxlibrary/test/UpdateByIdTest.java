@@ -5,7 +5,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * @Auther: denghb
+ * @author denghb
  * @Date: 2019-05-26 00:49
  */
 public class UpdateByIdTest extends BaseTest {
