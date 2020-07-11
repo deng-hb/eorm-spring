@@ -26,12 +26,6 @@ public abstract class EQueryTemplate {
     // 性能？
     private static final ExpressionParser SpEL = new SpelExpressionParser();
 
-    private static final Map<String, Table> DOMAIN_TABLE_CACHE = new ConcurrentHashMap<String, Table>();
-
-    private static final Map<String, String> WHERE_PRIMARY_KEY_CACHE = new ConcurrentHashMap<String, String>();
-
-    private static final Map<String, String> ALL_COLUMN_CACHE = new ConcurrentHashMap<String, String>();
-
     /**
      * 美化SQL
      * 去掉多余的换行和空格

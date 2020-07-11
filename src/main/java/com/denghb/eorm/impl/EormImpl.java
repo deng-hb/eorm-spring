@@ -315,6 +315,11 @@ public class EormImpl implements Eorm {
     }
 
     @Override
+    public <T> void updateByArgs(T domain, T args) {
+
+    }
+
+    @Override
     public <T> void deleteById(T domain) {
         ETraceSupport.start();
         Table table = ETableColumnParser.load(domain.getClass());
@@ -341,6 +346,11 @@ public class EormImpl implements Eorm {
         if (1 != res) {
             throw new EormException("deleteById fail");
         }
+    }
+
+    @Override
+    public <T> void deleteByArgs(T domain, T args) {
+
     }
 
     @Override

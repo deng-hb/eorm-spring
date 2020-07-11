@@ -46,6 +46,15 @@ public interface Eorm {
     <T> void updateById(T domain);
 
     /**
+     * 修改一个对象
+     *
+     * @param domain
+     * @param args
+     * @param <T>
+     */
+    <T> void updateByArgs(T domain, T args);
+
+    /**
      * 删除一个对象
      *
      * @param domain
@@ -61,6 +70,14 @@ public interface Eorm {
      * @param <T>
      */
     <T> void deleteById(Class<T> clazz, Object... id);
+
+    /**
+     * 删除一个对象
+     *
+     * @param domain
+     * @param <T>
+     */
+    <T> void deleteByArgs(T domain, T args);
 
     /**
      * 查询一个对象

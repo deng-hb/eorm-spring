@@ -29,7 +29,7 @@ public class TemplateTest {
 
         StandardEvaluationContext seContext = new StandardEvaluationContext();
         seContext.setVariables(new HashMap<String, Object>() {{
-            put("name", "");
+            put("name", "1");
         }});
         boolean a = SpEL.parseExpression("(null != #name and '' != #name)").getValue(seContext, boolean.class);
         for (int i = 0; i < sql.length(); i++) {
