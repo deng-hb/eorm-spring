@@ -5,14 +5,14 @@ import com.denghb.eorm.EormException;
 import com.denghb.eorm.support.ETableColumnParser;
 import com.denghb.eorm.support.ETraceSupport;
 import com.denghb.eorm.support.domain.Trace;
-import com.denghb.eorm.template.EQueryTemplate;
+import com.denghb.eorm.template.EAsteriskColumn;
+import com.denghb.eorm.template.ESQLTemplate;
 import com.denghb.eorm.support.domain.Column;
 import com.denghb.eorm.support.domain.Table;
 import com.denghb.eorm.utils.EClassScannerUtils;
 import com.denghb.eorm.utils.EReflectUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
@@ -69,7 +69,7 @@ public class EormImpl implements Eorm {
     public int execute(String sql, Object... args) {
         ETraceSupport.start();
         Trace trace = ETraceSupport.get();
-        sql = EQueryTemplate.format(sql, args);
+        sql = ESQLTemplate.format(sql);
         String tid = trace.getId();
 
         Log log = LogFactory.getLog(trace.getLogName());
@@ -79,10 +79,10 @@ public class EormImpl implements Eorm {
         }
         int affected = 0;
 
-        if (sql.contains(":") && null != args && 1 == args.length && !EReflectUtils.isSingleClass(args[0].getClass())) {// namedParameter
+        if (null != args && 1 == args.length && !EReflectUtils.isSingleClass(args[0].getClass())) {// namedParameter
             Object arg = args[0];
             Map<String, Object> params = EReflectUtils.objectToMap(arg);
-            sql = EQueryTemplate.parse(sql, params);
+            sql = ESQLTemplate.parse(sql, params);
 
             if (logDebug) {
                 log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
@@ -117,16 +117,12 @@ public class EormImpl implements Eorm {
             log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
         }
 
-        int size = 0;
         List<T> list = null;
-        if (sql.contains(":") && null != args && 1 == args.length && !EReflectUtils.isSingleClass(args[0].getClass())) {// namedParameter
+        if (null != args && 1 == args.length && !EReflectUtils.isSingleClass(args[0].getClass())) {// namedParameter
             Object object = args[0];
-            if (null == object) {
-                throw new EormException("args is not null");
-            }
             Map<String, Object> params = EReflectUtils.objectToMap(object);
-            sql = EQueryTemplate.parse(sql, params);
-            sql = EQueryTemplate.format(sql, args);
+            sql = ESQLTemplate.format(sql, params);
+            sql = ESQLTemplate.parse(sql, params);
 
             if (logDebug) {
                 log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, params));
@@ -136,11 +132,15 @@ public class EormImpl implements Eorm {
             if (EReflectUtils.isSingleClass(clazz)) {
                 list = namedParameterJdbcTemplate.queryForList(sql, params, clazz);
             } else {
-                list = namedParameterJdbcTemplate.query(sql, params, BeanPropertyRowMapper.newInstance(clazz));
+                EAsteriskColumn ac = ESQLTemplate.parseAsteriskColumn(sql, clazz);
+                if (ac.getFields().isEmpty()) {
+                    list = namedParameterJdbcTemplate.query(sql, params, BeanPropertyRowMapper.newInstance(clazz));
+                } else {
+                    list = loadAsteriskColumn(clazz, ac, params);
+                }
             }
-            size = null != list ? list.size() : 0;
         } else {
-            sql = EQueryTemplate.format(sql, args);
+            sql = ESQLTemplate.format(sql);
 
             if (logDebug) {
                 log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, Arrays.toString(args)));
@@ -160,15 +160,49 @@ public class EormImpl implements Eorm {
                     list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(clazz), args);
                 }
             }
-            size = null != list ? list.size() : 0;
         }
 
         if (logDebug) {
-            log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, size));
+            log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, list.size()));
             log.debug(MessageFormat.format("({0}) <- Taking      :{1}ms", tid, (System.currentTimeMillis() - trace.getStartTime())));
         }
         ETraceSupport.end();
 
+        return list;
+    }
+
+    private <T> List<T> loadAsteriskColumn(Class<T> clazz, EAsteriskColumn ac, Map<String, Object> params) {
+        String sql = ac.getTsql();
+        List<Map<String, Object>> mapList = namedParameterJdbcTemplate.queryForList(sql, params);
+
+        List<T> list = new ArrayList<>();
+        for (Map<String, Object> map : mapList) {
+            Object e = EReflectUtils.constructorInstance(clazz);
+            for (String key : map.keySet()) {
+                for (String fieldName : ac.getFields().keySet()) {
+                    String fd = fieldName + "__";
+                    if (key.contains(fd)) {
+                        String realFieldName = key.substring(fd.length());
+                        realFieldName = EReflectUtils.underlineToHump(realFieldName, false);
+
+                        Field field = ac.getFields().get(fieldName);
+                        Object fieldObj = EReflectUtils.getFieldValue(field, e);
+                        if (null == fieldObj) {
+                            fieldObj = EReflectUtils.constructorInstance(field.getType());
+                            EReflectUtils.setFieldValue(field, e, fieldObj);
+                        }
+                        Object v = map.get(key);
+                        Class<?> subFieldType = EReflectUtils.getField(field.getType(), realFieldName).getType();
+                        if (subFieldType.getSuperclass() == Number.class) {
+                            // 数字
+                            v = EReflectUtils.constructorInstance(subFieldType, String.class, String.valueOf(v));
+                        }
+                        EReflectUtils.setValue(fieldObj, realFieldName, v);
+                    }
+                }
+            }
+            list.add((T) e);
+        }
         return list;
     }
 

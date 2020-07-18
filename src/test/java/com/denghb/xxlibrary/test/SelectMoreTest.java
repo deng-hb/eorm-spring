@@ -12,7 +12,8 @@ import com.alibaba.druid.util.JdbcConstants;
 import com.denghb.eorm.support.ETableColumnParser;
 import com.denghb.eorm.support.domain.Column;
 import com.denghb.eorm.support.domain.Table;
-import com.denghb.eorm.template.EQueryTemplate;
+import com.denghb.eorm.template.EAsteriskColumn;
+import com.denghb.eorm.template.ESQLTemplate;
 import com.denghb.eorm.utils.EReflectUtils;
 import com.denghb.xxlibrary.model.ReadRecordModel;
 import net.sf.jsqlparser.JSQLParserException;
@@ -69,280 +70,26 @@ public class SelectMoreTest extends BaseTest {
     }*/;
     static String sql3 = ""/*{
         select rr.*, s.*, book.* from read_record rr, student s, book
-        where rr.s = s.id and rr.book_id = book.id
+        where rr.student_id = s.id and rr.book_id = book.id
         and s.id in (select id from student where gender = 1)
     }*/;
 
     @Test
     public void test1() {
 
-        List<ReadRecordModel> list = db.select(ReadRecordModel.class, "select * from student ");
+        List<ReadRecordModel> list = db.select(ReadRecordModel.class, sql, new HashMap<>());
 
         System.out.println(list);
 
-        String ss = parseAsteriskColumn(sql2, ReadRecordModel.class);
 
-        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(ss);
-
-        Set<Field> fields = EReflectUtils.getFields(ReadRecordModel.class);
-        Map<String, Field> fieldNames = new HashMap<>();
-        for (Field field : fields) {
-            fieldNames.put(field.getName(), field);
-            fieldNames.put(humpToUnderline(field.getName()), field);
-        }
-        List<ReadRecordModel> modelList = new ArrayList<>();
-        for (Map<String, Object> map : mapList) {
-            ReadRecordModel e = new ReadRecordModel();
-            for (String key : map.keySet()) {
-                for (String fieldName : fieldNames.keySet()) {
-                    String fd = fieldName + "__";
-                    if (key.contains(fd)) {
-                        String realFieldName = key.substring(fd.length());
-                        realFieldName = underlineToHump(realFieldName, false);
-
-                        Field field = fieldNames.get(fieldName);
-                        Object fieldObj = EReflectUtils.getFieldValue(field, e);
-                        if (null == fieldObj) {
-                            fieldObj = EReflectUtils.constructorInstance(field.getType());
-                            EReflectUtils.setFieldValue(field, e, fieldObj);
-                        }
-                        Object v = map.get(key);
-                        Class<?> subFieldType = EReflectUtils.getField(field.getType(), realFieldName).getType();
-                        if (subFieldType.getSuperclass() == Number.class) {
-                            // 数字
-                            v = EReflectUtils.constructorInstance(subFieldType, String.class, String.valueOf(v));
-                        }
-                        EReflectUtils.setValue(fieldObj, realFieldName, v);
-                    }
-                }
-            }
-            modelList.add(e);
-        }
-        System.out.println(modelList);
-
-    }
-
-    private static final char[] ALL_SYMBOL = "=+-*/><(),.%|&?!".toCharArray();
-
-    private static boolean contains(char c) {
-
-        for (int i = 0; i < ALL_SYMBOL.length; i++) {
-            if (ALL_SYMBOL[i] == c) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static void main(String[] args) {
         // druidParser();
         ccparser();
-        parseAsteriskColumn(sql3, ReadRecordModel.class);
+       ESQLTemplate.parseAsteriskColumn(sql3, ReadRecordModel.class);
     }
 
-    private static String parseAsteriskColumn(String tsql, Class<?> modelClass) {
-        tsql = EQueryTemplate.format(tsql);
-        System.out.println(tsql);
-        List<String> aliasList = new ArrayList<>();
-        Map<String, String> aliasTableMap = new HashMap<>();
-        int len = tsql.length();
-        StringBuilder alias = new StringBuilder();
-        StringBuilder table = new StringBuilder();
-        for (int i = 0; i < len; i++) {
-            char c = tsql.charAt(i);
-            if ('.' == c && '*' == tsql.charAt(i + 1)) {
-                if (alias.length() > 0) {
-                    // System.out.println(word);
-                    aliasList.add(alias.toString());
-                }
-                i++;
-                continue;
-            }
-            if (' ' == c || contains(c)) {
-                if (alias.length() > 0) {
-                    alias = new StringBuilder();
-                }
-                continue;
-            }
-            if ('f' == c && hasNextWord(tsql, i, "from")) {
-                if (aliasList.isEmpty()) {
-                    break;
-                }
-                i += 4;
-
-                alias = new StringBuilder();
-                boolean appendTable = true, appendTableAlias = false;
-                for (; i < len; i++) {
-                    char cc = tsql.charAt(i);
-                    if ('a' == cc && hasNextWord(tsql, i, "as ")) {
-                        i += 3;
-                        continue;
-                    }
-                    if (',' == cc) {// from a ,b b
-                        addAlisaTable(aliasTableMap, alias, table);
-                        table = new StringBuilder();
-                        alias = new StringBuilder();
-                        appendTable = true;
-                        appendTableAlias = false;
-                        continue;
-                    } else if ('j' == cc && hasNextWord(tsql, i, "join")) {
-                        // inner|left|right join table_xx alias_xx
-                        addAlisaTable(aliasTableMap, alias, table);
-                        table = new StringBuilder();
-                        alias = new StringBuilder();
-                        appendTable = true;
-                        appendTableAlias = false;
-                        i += 4;
-                        for (; i < len; i++) {
-                            char ccc = tsql.charAt(i);
-                            if ('a' == ccc && hasNextWord(tsql, i, "as ")) {
-                                i += 3;
-                                continue;
-                            }
-                            if (' ' == ccc) {
-                                if (table.length() > 0) {
-                                    appendTable = false;
-                                    appendTableAlias = true;
-                                }
-                                continue;
-                            } else if (appendTableAlias) {
-                                if ('i' == ccc && hasNextWord(tsql, i, "inner ")) {
-                                    i += 6;
-                                    addAlisaTable(aliasTableMap, alias, table);
-                                    alias = new StringBuilder();
-                                    table = new StringBuilder();
-                                    appendTable = true;
-                                    appendTableAlias = false;
-                                    break;
-                                } else if ('l' == ccc && hasNextWord(tsql, i, "left ")) {
-                                    i += 5;
-                                    addAlisaTable(aliasTableMap, alias, table);
-                                    alias = new StringBuilder();
-                                    table = new StringBuilder();
-                                    appendTable = true;
-                                    appendTableAlias = false;
-                                    break;
-                                } else if ('r' == ccc && hasNextWord(tsql, i, "right ")) {
-                                    i += 6;
-                                    addAlisaTable(aliasTableMap, alias, table);
-                                    alias = new StringBuilder();
-                                    table = new StringBuilder();
-                                    appendTable = true;
-                                    appendTableAlias = false;
-                                    break;
-                                } else if (hasNextWord(tsql, i, "on ")) {
-                                    i += 2;
-                                    addAlisaTable(aliasTableMap, alias, table);
-                                    alias = new StringBuilder();
-                                    table = new StringBuilder();
-                                    appendTable = false;
-                                    appendTableAlias = false;
-                                    break;
-                                }
-                            }
-
-                            if (appendTable) {
-                                table.append(ccc);
-                            }
-                            if (appendTableAlias) {
-                                alias.append(ccc);
-                            }
-                        }
-                        continue;
-                    } else if (' ' == cc) {
-                        if (table.length() > 0) {
-                            appendTable = false;
-                            appendTableAlias = true;
-                        }
-                        continue;
-                    } else if ('w' == cc && hasNextWord(tsql, i, "where")) {
-                        addAlisaTable(aliasTableMap, alias, table);
-                        break;
-                    }
-
-                    if (appendTable) {
-                        table.append(cc);
-                    }
-
-                    if (appendTableAlias) {
-                        alias.append(cc);
-                    }
-                }
-                break;// 结束
-            }
-            alias.append(c);
-        }
-
-        Set<Field> fields = EReflectUtils.getFields(modelClass);
-        List<String> fieldNames = new ArrayList<>();
-        for (Field field : fields) {
-            fieldNames.add(field.getName());
-            fieldNames.add(humpToUnderline(field.getName()));
-        }
-        if (!aliasList.isEmpty()) {
-            for (String a : aliasList) {
-                if (!fieldNames.contains(a)) {
-                    continue;
-                }
-                String tableName = aliasTableMap.get(a);
-                Table table1 = ETableColumnParser.getTable(tableName);
-                List<Column> columns = table1.getAllColumns();
-
-                StringBuilder sss = new StringBuilder();
-                for (int i = 0; i < columns.size(); i++) {
-                    Column column = columns.get(i);
-                    sss.append(a);
-                    sss.append(".");
-                    sss.append(column.getName());
-                    sss.append(" ");
-                    sss.append(a);
-                    sss.append("__");
-                    sss.append(column.getName());
-                    if (i < columns.size() - 1) {
-                        sss.append(",");
-                    }
-                }
-                tsql = tsql.replace(a + ".*", sss);
-                System.out.println(table1);
-            }
-        }
-
-
-        System.out.println(aliasList);
-        System.out.println(aliasTableMap);
-        System.out.println(tsql);
-        return tsql;
-    }
-
-    private static void addAlisaTable(Map<String, String> aliasTableMap, StringBuilder alisa, StringBuilder table) {
-        String tableName = table.toString();
-        if (table.length() == 0) {
-            return;
-        }
-        if (alisa.length() > 0) {
-            aliasTableMap.put(alisa.toString(), tableName);
-        } else {
-            aliasTableMap.put(tableName, tableName);
-        }
-    }
-
-    private static boolean hasNextWord(String source, int i, String word) {
-        int sourceLen = source.length();
-        int nextLen = word.length();
-        if (sourceLen < i + nextLen) {
-            return false;
-        }
-        for (int j = 0; j < nextLen; j++) {
-            char c1 = source.charAt(i + j);
-            c1 = Character.toLowerCase(c1);
-            char c2 = word.charAt(j);
-            c2 = Character.toLowerCase(c2);
-            if (c1 != c2) {
-                return false;
-            }
-        }
-        return true;
-    }
 
     private static void druidParser() {
 
@@ -397,47 +144,5 @@ public class SelectMoreTest extends BaseTest {
 
     }
 
-    /**
-     * 驼峰格式转换为下划线格式
-     */
-    public static String humpToUnderline(String name) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < name.length(); i++) {
-            char ch = name.charAt(i);
-            if (i > 0 && Character.isUpperCase(ch)) {// 首字母是大写不需要添加下划线
-                builder.append('_');
-            }
-            builder.append(ch);
-        }
-
-        int startIndex = 0;
-        if (builder.charAt(0) == '_') {//如果以下划线开头则忽略第一个下划线
-            startIndex = 1;
-        }
-        return builder.substring(startIndex).toLowerCase();
-    }
-
-
-    /**
-     * 下划线格式转换为驼峰格式
-     */
-    public static String underlineToHump(String name, boolean firstCharToUpper) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < name.length(); i++) {
-            char ch = name.charAt(i);
-            if (i == 0 && firstCharToUpper) {
-                builder.append(Character.toUpperCase(ch));
-            } else {
-                if (i > 0 && ch == '_') {// 首字母是大写不需要添加下划线
-                    i++;
-                    ch = name.charAt(i);
-                    builder.append(Character.toUpperCase(ch));
-                } else {
-                    builder.append(ch);
-                }
-            }
-        }
-        return builder.toString();
-    }
 
 }
