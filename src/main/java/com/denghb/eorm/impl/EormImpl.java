@@ -8,9 +8,11 @@ import com.denghb.eorm.support.domain.Trace;
 import com.denghb.eorm.template.EQueryTemplate;
 import com.denghb.eorm.support.domain.Column;
 import com.denghb.eorm.support.domain.Table;
+import com.denghb.eorm.utils.EClassScannerUtils;
 import com.denghb.eorm.utils.EReflectUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
@@ -25,8 +27,10 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 基本实现
@@ -39,9 +43,26 @@ public class EormImpl implements Eorm {
 
     public NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
-    public EormImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
+    private String domainPackages;
+
+    public EormImpl(JdbcTemplate jdbcTemplate) {
+        this(jdbcTemplate, null);
+    }
+
+    public EormImpl(JdbcTemplate jdbcTemplate, String domainPackages) {
         this.jdbcTemplate = jdbcTemplate;
-        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
+        this.domainPackages = domainPackages;
+        if (null != domainPackages) {
+            Set<Class<?>> domains = new HashSet<>();
+            String[] packages = domainPackages.split(",");
+            for (String s : packages) {
+                domains.addAll(EClassScannerUtils.getClasses(s));
+            }
+            for (Class<?> clazz : domains) {
+                ETableColumnParser.load(clazz);
+            }
+        }
     }
 
     @Override

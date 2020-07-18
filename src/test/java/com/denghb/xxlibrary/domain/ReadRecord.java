@@ -26,7 +26,7 @@ CREATE TABLE `read_record` (
  * @author denghb
  * @generateTime Sat Jun 29 21:15:58 CST 2019
  */
-@Etable(name="read_record", database="xxlibrary")
+@Etable(name="read_record")
 public class ReadRecord implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;

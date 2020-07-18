@@ -57,6 +57,16 @@ public class EReflectUtils {
         }
     }
 
+    public static Field getField(Class<?> clazz, String fieldName) {
+        Set<Field> fields = getFields(clazz);
+        for (Field field : fields) {
+            if (fieldName.equals(field.getName())) {
+                return field;
+            }
+        }
+        return null;
+    }
+
     /**
      * 将值保存到实体对象的指定属性中
      */
@@ -66,6 +76,24 @@ public class EReflectUtils {
             field.set(object, value);
         } catch (Exception e) {
             throw new RuntimeException("Can't set value（" + value + "）to instance " + object.getClass().getName() + "." + field.getName(), e);
+        }
+    }
+
+    /**
+     * 设置值
+     *
+     * @param object    对象
+     * @param fieldName 字段名
+     * @param value     值
+     */
+    public static void setValue(Object object, String fieldName, Object value) {
+
+        Set<Field> fields = EReflectUtils.getFields(object.getClass());
+        for (Field field : fields) {
+            if (fieldName.equals(field.getName())) {
+                EReflectUtils.setFieldValue(field, object, value);
+                break;
+            }
         }
     }
 
@@ -133,4 +161,38 @@ public class EReflectUtils {
     public static boolean isSingleClass(Class clazz) {
         return clazz.isPrimitive() || Number.class.isAssignableFrom(clazz) || CharSequence.class.isAssignableFrom(clazz) || Date.class.isAssignableFrom(clazz);
     }
+
+    /**
+     * 根据实体类创建实体对象
+     */
+    public static Object constructorInstance(Class<?> clazz) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("Object class mustn't be null");
+        }
+
+        try {
+            return clazz.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Can't create instance（" + clazz.getName() + "）  by reflect!", e);
+        }
+    }
+
+    /**
+     * 有参构造创建对象
+     */
+    public static Object constructorInstance(Class<?> clazz, Class<?> type, Object value) {
+        return constructorInstance(clazz, new Class[]{type}, new Object[]{value});
+    }
+
+    public static Object constructorInstance(Class<?> clazz, Class<?>[] types, Object[] values) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("Object class mustn't be null");
+        }
+        try {
+            return clazz.getConstructor(types).newInstance(values);
+        } catch (Exception e) {
+            throw new RuntimeException("Can't create instance（" + clazz.getName() + "）  by reflect!", e);
+        }
+    }
+
 }

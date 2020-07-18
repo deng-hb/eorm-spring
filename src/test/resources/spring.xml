@@ -40,7 +40,7 @@
 
     <bean id="eorm" class="com.denghb.eorm.impl.EormImpl">
         <constructor-arg index="0" ref="jdbcTemplate" />
-        <constructor-arg index="1" ref="namedParameterJdbcTemplate" />
+        <constructor-arg index="1" value="com.denghb.xxlibrary.domain" />
     </bean>
 
     <bean id="baseService" class="com.denghb.xxlibrary.base.impl.BaseServiceImpl" />

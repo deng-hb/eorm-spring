@@ -15,11 +15,6 @@ public @interface Etable {
     String name();
 
     /**
-     * 数据库
-     */
-    String database() default "";
-
-    /**
      * 描述
      */
     String comment() default "";

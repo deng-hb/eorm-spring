@@ -29,7 +29,7 @@ CREATE TABLE `book` (
  * @generateTime Sat Jun 29 22:13:33 CST 2019
  */
 @lombok.Data()
-@Etable(name="book", database="xxlibrary")
+@Etable(name="book")
 public class Book implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;

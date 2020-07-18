@@ -27,7 +27,7 @@ CREATE TABLE `student` (
  * @author denghb
  * @generateTime Sat Jun 29 21:15:58 CST 2019
  */
-@Etable(name="student", database="xxlibrary")
+@Etable(name="student")
 public class Student implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;

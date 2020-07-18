@@ -20,20 +20,29 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ETableColumnParser {
 
-    private static final Map<String, Table> DOMAIN_TABLE_CACHE = new ConcurrentHashMap<String, Table>();
+    // <tableName,Table>
+    private static final Map<String, Table> CACHE_TABLE = new ConcurrentHashMap<String, Table>();
 
     private static final Map<String, String> WHERE_PRIMARY_KEY_CACHE = new ConcurrentHashMap<String, String>();
 
     private static final Map<String, String> ALL_COLUMN_CACHE = new ConcurrentHashMap<String, String>();
 
+    public static Table getTable(String tableName) {
+        return CACHE_TABLE.get(tableName);
+    }
+
     public static Table load(Class<?> clazz) {
-        String key = clazz.getName();
-        Table table = DOMAIN_TABLE_CACHE.get(key);
+        Etable etable = clazz.getAnnotation(Etable.class);
+        if (null == etable) {
+            throw new EormException("not find @Etable");
+        }
+        String tableName = etable.name();
+        Table table = getTable(tableName);
         if (null != table) {
             return table;
         }
         table = new Table();
-        table.setName(getTableName(clazz));
+        table.setName(tableName);
 
         //
         Set<Field> fields = EReflectUtils.getFields(clazz);
@@ -60,7 +69,7 @@ public class ETableColumnParser {
         if (table.getPkColumns().isEmpty()) {
             throw new EormException("not find @Ecolumn primaryKey = true");
         }
-        DOMAIN_TABLE_CACHE.put(key, table);
+        CACHE_TABLE.put(tableName, table);
         return table;
     }
 
@@ -75,28 +84,6 @@ public class ETableColumnParser {
 
         c.setDefaultValue(e.defaultValue());
         return c;
-    }
-
-    private static <T> String getTableName(Class<T> clazz) {
-
-        // 获取表名
-        Etable table = clazz.getAnnotation(Etable.class);
-        if (null == table) {
-            throw new EormException("not found @ETable");
-        }
-        StringBuilder sb = new StringBuilder("`");
-        // 获取数据库名称
-        String database = table.database();
-
-        if (database.trim().length() != 0) {
-            sb.append(database);
-            sb.append("`.`");
-        }
-        // 获取注解的表名
-        sb.append(table.name());
-        sb.append("`");
-
-        return sb.toString();
     }
 
     public static void validate(Column column, Object value) {
