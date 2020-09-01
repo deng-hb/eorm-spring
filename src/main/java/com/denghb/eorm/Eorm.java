@@ -74,10 +74,10 @@ public interface Eorm {
     /**
      * 删除一个对象
      *
-     * @param domain
+     * @param args
      * @param <T>
      */
-    <T> void deleteByArgs(T domain, T args);
+    <T> void deleteByArgs(T args);
 
     /**
      * 查询一个对象

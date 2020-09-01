@@ -22,7 +22,7 @@ public class ReadRecord implements java.io.Serializable {
 
     /** 书籍ID */
     @Ecolumn(name = "book_id")
-    private String bookId;
+    private Integer bookId;
 
     /** 插入时间 */
     @Ecolumn(name = "created_time")

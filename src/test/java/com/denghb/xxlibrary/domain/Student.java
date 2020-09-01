@@ -14,7 +14,7 @@ public class Student implements java.io.Serializable {
 
     /** ID */
     @Ecolumn(name = "id", primaryKey = true)
-    private Long id;
+    private Integer id;
 
     /** 姓名 */
     @Ecolumn(name = "name")

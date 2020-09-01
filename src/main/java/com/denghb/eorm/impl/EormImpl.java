@@ -196,6 +196,8 @@ public class EormImpl implements Eorm {
                         if (subFieldType.getSuperclass() == Number.class) {
                             // 数字
                             v = EReflectUtils.constructorInstance(subFieldType, String.class, String.valueOf(v));
+                        } else if (subFieldType == Boolean.class && !(v instanceof Boolean)) {
+                            v = "1".equals(v);
                         }
                         EReflectUtils.setValue(fieldObj, realFieldName, v);
                     }
@@ -404,7 +406,7 @@ public class EormImpl implements Eorm {
     }
 
     @Override
-    public <T> void deleteByArgs(T domain, T args) {
+    public <T> void deleteByArgs(T args) {
 
     }
 

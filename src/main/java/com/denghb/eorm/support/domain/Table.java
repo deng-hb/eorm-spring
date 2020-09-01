@@ -1,11 +1,14 @@
 package com.denghb.eorm.support.domain;
 
+import lombok.Data;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 表信息
  */
+@Data
 public class Table {
 
     /**
@@ -27,35 +30,4 @@ public class Table {
      */
     private List<Column> otherColumns = new ArrayList<Column>();
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<Column> getPkColumns() {
-        return pkColumns;
-    }
-
-    public void setPkColumns(List<Column> pkColumns) {
-        this.pkColumns = pkColumns;
-    }
-
-    public List<Column> getAllColumns() {
-        return allColumns;
-    }
-
-    public void setAllColumns(List<Column> allColumns) {
-        this.allColumns = allColumns;
-    }
-
-    public List<Column> getOtherColumns() {
-        return otherColumns;
-    }
-
-    public void setOtherColumns(List<Column> otherColumns) {
-        this.otherColumns = otherColumns;
-    }
 }
