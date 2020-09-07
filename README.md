@@ -1,27 +1,9 @@
-## EOrm-spring
+## eorm-spring
 
 Easy ORM with Spring framework
 
-
-### Warning
-+ Method `insert(obj)`,`updateById(obj)` ignore `null` value 
-+ Only a single primary key is supported
-
-### Example
+#### Core 
 ```java
-ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("classpath:spring.xml");
-EOrm db = ctx.getBean(EOrm.class);
-
-String sql = ""/*{
-select * from book where isbn = ?
-}*/;
-Book book = db.selectOne(Book.class, sql, "xxxx-xxxx-xxxx");
-
-```
-
-### Core
-```java
-
 /**
  * 执行一条SQL
  *
@@ -59,6 +41,15 @@ int execute(String sql, Object... args);
 <T> void updateById(T domain);
 
 /**
+ * 修改一个对象
+ *
+ * @param domain
+ * @param args
+ * @param <T>
+ */
+<T> void updateByArgs(T domain, T args);
+
+/**
  * 删除一个对象
  *
  * @param domain
@@ -73,7 +64,15 @@ int execute(String sql, Object... args);
  * @param id
  * @param <T>
  */
-<T> void deleteById(Class<T> clazz, Object id);
+<T> void deleteById(Class<T> clazz, Object... id);
+
+/**
+ * 删除一个对象
+ *
+ * @param args
+ * @param <T>
+ */
+<T> void deleteByArgs(T args);
 
 /**
  * 查询一个对象
@@ -94,16 +93,19 @@ int execute(String sql, Object... args);
  * @param <T>
  * @return T
  */
-<T> T selectById(Class<T> clazz, Object id);
+<T> T selectById(Class<T> clazz, Object... id);
+```
 
-/**
- * 分页查询
- *
- * @param clazz
- * @param sql
- * @param pageReq
- * @param <T>
- * @return EPageRes<T>
- */
-<T> EPageRes<T> selectPage(Class<T> clazz, String sql, EPageReq pageReq);
+#### Advanced
+```
+String sql = ""/*{
+    select * from tb_user where deleted = 0
+    #if (null != #name && '' != #name)
+        and name like concat('%', :name, '%')
+    #end
+}*/;
+Map<String, Object> args = new HashMap<String, Object>(){{
+    put("name", "张");
+}};
+List<UserModel> list = db.select(UserModel.class, sql, args);
 ```

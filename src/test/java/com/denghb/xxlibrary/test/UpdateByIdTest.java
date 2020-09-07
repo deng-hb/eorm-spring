@@ -37,7 +37,7 @@ public class UpdateByIdTest extends BaseTest {
         }
 
         Student user = new Student();
-        user.setId(2L);
+        user.setId(2);
         user.setName("张三");
         user.setGender(0);
         db.insert(user);

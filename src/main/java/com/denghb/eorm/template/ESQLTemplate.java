@@ -301,7 +301,7 @@ public abstract class ESQLTemplate {
      * @param i       索引
      * @return 结果
      */
-    private static boolean hasNextKeyword(String sql, String keyword, int i) {
+    public static boolean hasNextKeyword(String sql, String keyword, int i) {
         if (null == keyword || null == sql) {
             return false;
         }
@@ -361,16 +361,8 @@ public abstract class ESQLTemplate {
         return new Expression(j, el.toString());
     }
 
-    /**
-     * @param tsql
-     * @param clazz
-     * @return
-     */
-    public static EAsteriskColumn parseAsteriskColumn(String tsql, Class<?> clazz) {
-        tsql = format(tsql);
-        List<String> aliasList = new ArrayList<>();
-        Map<String, String> aliasTableMap = new HashMap<>();
-        int len = tsql.length();
+
+    private static void parseAsteriskSelect(String tsql, int len, List<String> aliasList, Map<String, String> aliasTableMap) {
         StringBuilder alias = new StringBuilder();
         StringBuilder table = new StringBuilder();
         for (int i = 0; i < len; i++) {
@@ -389,11 +381,11 @@ public abstract class ESQLTemplate {
                 }
                 continue;
             }
-            if ('f' == c && hasNextKeyword(tsql, "from", i)) {
+            if ('f' == c && hasNextKeyword(tsql, " from ", i)) {
                 if (aliasList.isEmpty()) {
                     break;
                 }
-                i += 4;
+                i += 5;
 
                 alias = new StringBuilder();
                 boolean appendTable = true, appendTableAlias = false;
@@ -410,14 +402,14 @@ public abstract class ESQLTemplate {
                         appendTable = true;
                         appendTableAlias = false;
                         continue;
-                    } else if ('j' == cc && hasNextKeyword(tsql, "join", i)) {
-                        // inner|left|right join table_xx alias_xx
+                    } else if ('j' == cc && hasNextKeyword(tsql, "join ", i)) {
+                        // join table_xx alias_xx
                         addAlisaTable(aliasTableMap, alias, table);
                         table = new StringBuilder();
                         alias = new StringBuilder();
                         appendTable = true;
                         appendTableAlias = false;
-                        i += 4;
+                        i += 5;
                         for (; i < len; i++) {
                             char ccc = tsql.charAt(i);
                             if ('a' == ccc && hasNextKeyword(tsql, "as ", i)) {
@@ -431,32 +423,8 @@ public abstract class ESQLTemplate {
                                 }
                                 continue;
                             } else if (appendTableAlias) {
-                                if ('i' == ccc && hasNextKeyword(tsql, "inner ", i)) {
-                                    i += 6;
-                                    addAlisaTable(aliasTableMap, alias, table);
-                                    alias = new StringBuilder();
-                                    table = new StringBuilder();
-                                    appendTable = true;
-                                    appendTableAlias = false;
-                                    break;
-                                } else if ('l' == ccc && hasNextKeyword(tsql, "left ", i)) {
-                                    i += 5;
-                                    addAlisaTable(aliasTableMap, alias, table);
-                                    alias = new StringBuilder();
-                                    table = new StringBuilder();
-                                    appendTable = true;
-                                    appendTableAlias = false;
-                                    break;
-                                } else if ('r' == ccc && hasNextKeyword(tsql, "right ", i)) {
-                                    i += 6;
-                                    addAlisaTable(aliasTableMap, alias, table);
-                                    alias = new StringBuilder();
-                                    table = new StringBuilder();
-                                    appendTable = true;
-                                    appendTableAlias = false;
-                                    break;
-                                } else if (hasNextKeyword(tsql, "on ", i)) {
-                                    i += 2;
+                                if (hasNextKeyword(tsql, "on ", i)) {
+                                    i += 3;
                                     addAlisaTable(aliasTableMap, alias, table);
                                     alias = new StringBuilder();
                                     table = new StringBuilder();
@@ -497,6 +465,19 @@ public abstract class ESQLTemplate {
             }
             alias.append(c);
         }
+    }
+
+    /**
+     * @param tsql
+     * @param clazz
+     * @return
+     */
+    public static EAsteriskColumn parseAsteriskColumn(String tsql, Class<?> clazz) {
+        tsql = format(tsql);
+        List<String> aliasList = new ArrayList<>();
+        Map<String, String> aliasTableMap = new HashMap<>();
+        int len = tsql.length();
+        parseAsteriskSelect(tsql, len, aliasList, aliasTableMap);
 
         Set<Field> fields = EReflectUtils.getFields(clazz);
 

@@ -15,7 +15,7 @@ public class DeleteByIdTest extends BaseTest {
     public void deleteById() {
 
         Student student = new Student();
-        student.setId(11111L);
+        student.setId(11111);
         student.setName("123123131");
         student.setGender(1);
         db.insert(student);

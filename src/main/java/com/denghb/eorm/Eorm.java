@@ -49,10 +49,10 @@ public interface Eorm {
      * 修改一个对象
      *
      * @param domain
-     * @param args
+     * @param hits
      * @param <T>
      */
-    <T> void updateByArgs(T domain, T args);
+    <T> void updateByHits(T domain, T hits);
 
     /**
      * 删除一个对象
@@ -74,10 +74,10 @@ public interface Eorm {
     /**
      * 删除一个对象
      *
-     * @param args
+     * @param hits
      * @param <T>
      */
-    <T> void deleteByArgs(T args);
+    <T> void deleteByHits(T hits);
 
     /**
      * 查询一个对象

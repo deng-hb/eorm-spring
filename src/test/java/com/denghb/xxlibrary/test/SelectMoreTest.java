@@ -16,13 +16,11 @@ import com.denghb.eorm.template.EAsteriskColumn;
 import com.denghb.eorm.template.ESQLTemplate;
 import com.denghb.eorm.utils.EReflectUtils;
 import com.denghb.xxlibrary.model.ReadRecordModel;
+import com.denghb.xxlibrary.model.TestSubSelectModel;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-import net.sf.jsqlparser.statement.select.SelectItem;
+import net.sf.jsqlparser.statement.select.*;
 import net.sf.jsqlparser.util.TablesNamesFinder;
 import org.junit.Test;
 
@@ -33,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author denghb
@@ -47,15 +47,7 @@ public class SelectMoreTest extends BaseTest {
     }*/;
 
     static String sql1 = ""/*{
-        select c.name commodityName, c.gtin, c.id commodityId, ifnull(t.sales,0) - ifnull(cs.stocknum,0) - ifnull(csi.size,0) prenum, wc.unit_size size from tb_warehouse_commodity wc
-        left join tb_commodity c on wc.commodity_id = c.id
-        left join (select sum(od.num) sales, od.commodity_id from tb_order_detail od left join tb_pay p
-        on od.order_id = p.order_id left join tb_order o on o.id = od.order_id left join tb_counter c
-        on o.counter_code = c.code where p.status = 11 and od.inserttime >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) and c.warehouse_id = ? group by commodity_id) t on t.commodity_id = wc.commodity_id
-        left join (select sum(num - sales) stocknum,commodity_id from tb_commodity_stock where warehouse_id = ? group by commodity_id) cs on cs.commodity_id = wc.commodity_id
-        left join (select commodity_id,sum(size*piece) size from tb_commodity_stock_in where warehouse_id = ? and status = 1 and isactive = 1 group by commodity_id) csi
-        on csi.commodity_id = wc.commodity_id
-        where wc.warehouse_id = ? and wc.isactive = 1 and ifnull(t.sales,0) - ifnull(cs.stocknum,0) - ifnull(csi.size,0) > 0
+
     }*/;
 
     static String sql = ""/*{
@@ -84,10 +76,121 @@ public class SelectMoreTest extends BaseTest {
 
     }
 
+    @Test
+    public void parse() throws JSQLParserException {
+        // 解析子查询
+        String tsql = ""/*{
+            select s.*, s1.* from student s inner join (
+                select a.id, a.name from student a where gender in (1)
+            ) s1 on s1.id = s.id
+        }*/;
+        tsql = ESQLTemplate.format(tsql);
+        StringBuilder alias = new StringBuilder();
+        List<String> aliasList = new ArrayList<>();
+        int start = 0;
+        int length = tsql.length();
+        for (int i = 0; i < length; i++) {
+            char c = tsql.charAt(i);
+            if ('.' == c && '*' == tsql.charAt(i + 1)) {
+                if (alias.length() > 0) {
+                    // System.out.println(word);
+                    aliasList.add(alias.toString());
+                }
+                i++;
+                continue;
+            }
+            if (ESQLTemplate.hasNextKeyword(tsql, " from ", i)) {
+                start = i + 5;
+                break;
+            }
+            if (' ' == c || ',' == c) {
+                if (alias.length() > 0) {
+                    alias = new StringBuilder();
+                }
+                continue;
+            }
+            alias.append(c);
+        }
+
+        Map<String, String> aliasTable = new HashMap<>();
+        // 查找对应的列
+        for (String a : aliasList) {
+            int end = tsql.indexOf(" " + a + " ");
+            StringBuilder table = new StringBuilder();
+            for (int i = end; i > start; i--) {
+                char c = tsql.charAt(i);
+                if (' ' == c) {
+                    if (table.length() > 0) {
+                        aliasTable.put(a, table.reverse().toString());
+                        table = new StringBuilder();
+                    }
+                    continue;
+                }
+                if (')' == c) {
+                    // 表示这个是临时表，需要找到字段
+                    int d = 1;
+                    i--;
+                    int start2 = 0;
+                    for (int j = i; j > start; j--) {
+                        c = tsql.charAt(j);
+                        if (')' == c) {
+                            d++;
+                        }
+                        if ('(' == c) {
+                            d--;
+                            if (0 == d) {
+                                start2 = j + 1;
+                            }
+                        }
+                    }
+
+                    String s = tsql.substring(start2, i);
+                    System.out.println(s);
+                    StringBuilder column = new StringBuilder();
+                    int s2 = 0;
+                    for (int k = 0; k < s.length(); k++) {
+                        char c1 = s.charAt(k);
+                        if (ESQLTemplate.hasNextKeyword(s, " select ", k)) {
+                            k += 7;
+                        } else if ('(' == c1) {
+                            s2++;
+                        } else if (')' == c1) {
+                            s2--;
+                        } else if (',' == c1) {
+                            System.out.println(column);
+                            column = new StringBuilder();
+                        } else if (ESQLTemplate.hasNextKeyword(s, " from ", k)) {
+                            System.out.println(column);
+                            break;
+                        } else if (' ' == c1) {
+                        } else {
+                            column.append(c1);
+                        }
+                    }
+                }
+                table.append(c);
+            }
+            if (table.length() > 0) {
+                aliasTable.put(a, table.reverse().toString());
+            }
+        }
+        System.out.println(aliasTable);
+        /*
+        List<TestSubSelectModel> list = db.select(TestSubSelectModel.class, sql);
+
+        System.out.println(list);
+
+         */
+    }
+
+    String sss = ""/*{
+select s.*, s1.* from student s inner join ( select a.id, a.name from student a ) s1 on s1.id = s.id
+    }*/;
+
     public static void main(String[] args) {
         // druidParser();
-        ccparser();
-       ESQLTemplate.parseAsteriskColumn(sql3, ReadRecordModel.class);
+//        ccparser();
+        ESQLTemplate.parseAsteriskColumn(sql3, ReadRecordModel.class);
     }
 
 

@@ -372,7 +372,7 @@ public class EormImpl implements Eorm {
     }
 
     @Override
-    public <T> void updateByArgs(T domain, T args) {
+    public <T> void updateByHits(T domain, T hits) {
 
     }
 
@@ -406,7 +406,7 @@ public class EormImpl implements Eorm {
     }
 
     @Override
-    public <T> void deleteByArgs(T args) {
+    public <T> void deleteByHits(T hits) {
 
     }
 
