@@ -9,14 +9,10 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.util.JdbcConstants;
-import com.denghb.eorm.support.ETableColumnParser;
-import com.denghb.eorm.support.domain.Column;
+import com.denghb.eorm.support.EAsteriskColumn;
+import com.denghb.eorm.support.ESelectParser;
 import com.denghb.eorm.support.domain.SelectSQL;
-import com.denghb.eorm.support.domain.SelectTable;
-import com.denghb.eorm.support.domain.Table;
-import com.denghb.eorm.template.EAsteriskColumn;
 import com.denghb.eorm.template.ESQLTemplate;
-import com.denghb.eorm.utils.EReflectUtils;
 import com.denghb.xxlibrary.model.ReadRecordModel;
 import com.denghb.xxlibrary.model.TestSubSelectModel;
 import net.sf.jsqlparser.JSQLParserException;
@@ -27,11 +23,7 @@ import net.sf.jsqlparser.util.TablesNamesFinder;
 import org.junit.Test;
 
 import java.io.StringReader;
-import java.lang.reflect.Field;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author denghb
@@ -191,140 +183,19 @@ public class SelectMoreTest extends BaseTest {
          */
     }
 
-    private static SelectSQL parse(String sql) {
-        SelectSQL ss = new SelectSQL();
+    @Test
+    public void test2() {
 
-        sql = ESQLTemplate.format(sql);
-        StringBuilder field = new StringBuilder();
-        int ct = 0;
-        int start = 0;
-        for (int i = 0; i < sql.length(); i++) {
-            char c = sql.charAt(i);
-            if (ESQLTemplate.hasNextKeyword(sql, "select ", i)) {
-                i += 6;
-            } else if (ESQLTemplate.hasNextKeyword(sql, " from ", i)) {
-                ss.getFields().add(field.toString().trim());
-                i += 5;
-                start = i;
+        String tsql = ""/*{
+            select s.*, s1.* from student s inner join (
+                select * from student
+            ) s1 on s1.id = s.id
+        }*/;
+        EAsteriskColumn ac = ESelectParser.parse(tsql, TestSubSelectModel.class);
+        System.out.println(ac);
+        List<TestSubSelectModel> list = db.select(TestSubSelectModel.class, tsql);
 
-                boolean hasTable = true;
-                for (; i < sql.length(); i++) {
-                    c = sql.charAt(i);
-                    if (ESQLTemplate.hasNextKeyword(sql, " join ", i)) {
-                        i += 5;
-                        SelectTable st = getTable(sql, i);
-                        ss.getTable().put(st.getAlias(), st.getTable());
-                        i = st.getIndex();
-                    } else if (' ' == c) {
-
-                    } else if (',' == c) {
-                        i++;
-                        SelectTable st = getTable(sql, i);
-                        ss.getTable().put(st.getAlias(), st.getTable());
-                        i = st.getIndex();
-                    } else {
-                        if (hasTable) {
-                            SelectTable st = getTable(sql, i);
-                            ss.getTable().put(st.getAlias(), st.getTable());
-                            i = st.getIndex();
-                            hasTable = false;
-                        }
-                    }
-
-                }
-                break;
-            } else {
-                if ('(' == c) {
-                    ct++;
-                } else if (')' == c) {
-                    ct--;
-                } else if (0 == ct && ',' == c) {
-                    ss.getFields().add(field.toString().trim());
-                    field = new StringBuilder();
-                    continue;
-                }
-                field.append(c);
-            }
-        }
-        // 是那种xxx.*的
-        List<String> fields = ss.getFields().stream().filter(f -> f.endsWith(".*")).collect(Collectors.toList());
-
-        return ss;
-    }
-
-    private static SelectTable getTable(String sql, int i) {
-        SelectTable st = new SelectTable();
-        boolean isSpace = false;
-        StringBuilder table = new StringBuilder();
-        StringBuilder alias = new StringBuilder();
-        f1:
-        for (; i < sql.length(); i++) {
-            char c = sql.charAt(i);
-            if ('(' == c) {// 子查询
-                int ct = 1;
-                i++;
-                for (; i < sql.length(); i++) {
-                    c = sql.charAt(i);
-                    if (')' == c) {
-                        ct--;
-                        continue;
-                    }
-                    if (ct == 0) {
-                        // 找别名 除了"as"
-                        isSpace = false;
-                        for (; i < sql.length(); i++) {
-                            c = sql.charAt(i);
-                            if (ESQLTemplate.hasNextKeyword(sql, " as ", i)) {
-                                i += 3;
-                            } else if (' ' == c) {
-                                if (isSpace) {
-                                    break f1;
-                                }
-                                isSpace = true;
-                            } else if (',' == c) {
-                                i--;
-                                break f1;
-                            } else {
-                                alias.append(c);
-                            }
-                        }
-
-                        break f1;
-                    }
-                    table.append(c);
-                }
-            } else if (' ' == c) {
-                if (table.length() > 0) {
-                    if (isSpace) {
-                        break;
-                    }
-                    isSpace = true;
-                }
-            } else if (',' == c) {
-                i--;
-                break;
-            } else {
-                if (isSpace) {
-                    alias.append(c);
-                } else {
-                    table.append(c);
-                }
-            }
-        }
-        String a = alias.toString().trim();
-        String t = table.toString().trim();
-        if (hasKeywords(a)) {
-            a = t;
-        }
-        st.setAlias(a);
-        st.setTable(t);
-        st.setIndex(i);
-        return st;
-    }
-
-    private static boolean hasKeywords(String alias) {
-        alias = alias.toLowerCase();
-        return Arrays.asList("left", "right", "inner", "on", "order", "group", "having", "where").contains(alias);
+        System.out.println(list);
     }
 
 
@@ -367,12 +238,68 @@ select column_name,data_type from information_schema.columns
     where table_name = '表名'
     }*/;
 
+    static String sss12 = ""/*{
+        select m.* , n.平均分 , n.总分 from
+(select * from (select * from tb) a pivot (max(分数) for 课程 in (语文,数学,物理)) b) m,
+(select 姓名 , cast(avg(分数*1.0) as decimal(18,2)) 平均分 , sum(分数) 总分 from tb group by 姓名) n
+where m.姓名 = n.姓名
+    }*/;
+
+    static String sss13 = ""/*{
+SELECT stuid FROM (SELECT tb_student.stuid, couid FROM tb_score
+            RIGHT JOIN tb_student on tb_score.stuid = tb_student.stuid) as t1 WHERE couid is NULL;
+    }*/;
+    static String sss14 = ""/*{
+SELECT stuname, birth FROM tb_student WHERE birth = (SELECT max(birth) FROM tb_student);
+
+    }*/;
+    static String sss15 = ""/*{
+SELECT stuname, avgmark FROM (SELECT stuid, avg(mark) as avgmark FROM tb_score GROUP BY(stuid)) as temp
+INNER JOIN tb_student on temp.stuid=tb_student.stuid;
+    }*/;
+    static String sss16 = ""/*{
+SELECT stuid,avg(mark) as avgmark FROM tb_score GROUP BY(stuid) HAVING avg(mark)>90;
+
+    }*/;
+    static String sss17 = ""/*{
+SELECT if(gender,'男','女') as '性别',COUNT(stuid) as '人数' FROM tb_student GROUP BY(gender);
+
+    }*/;
+
+    static String sss18 = ""/*{
+select * from (select * from tb) a pivot (max(分数) for 课程 in (语文,数学,物理)) b
+    }*/;
+
 
     public static void main(String[] args) {
 
-        SelectSQL ss = parse("select a.id, a.name from student2 a");
+        SelectSQL ss = ESelectParser.parse(sss15);
 
         System.out.println(ss);
+        System.out.println(ESelectParser.parse(sss));
+        System.out.println(ESelectParser.parse(sss1));
+        System.out.println(ESelectParser.parse(sss2));
+        System.out.println(ESelectParser.parse(sss3));
+
+        System.out.println(ESelectParser.parse(sss4));
+        System.out.println(ESelectParser.parse(sss5));
+        System.out.println(ESelectParser.parse(sss6));
+
+        System.out.println(ESelectParser.parse(sss7));
+        System.out.println(ESelectParser.parse(sss8));
+        System.out.println(ESelectParser.parse(sss9));
+
+        System.out.println(ESelectParser.parse(sss10));
+        System.out.println(ESelectParser.parse(sss11));
+        System.out.println(ESelectParser.parse(sss12));
+
+        System.out.println(ESelectParser.parse(sss13));
+        System.out.println(ESelectParser.parse(sss14));
+        System.out.println(ESelectParser.parse(sss15));
+
+        System.out.println(ESelectParser.parse(sss16));
+        System.out.println(ESelectParser.parse(sss17));
+        System.out.println(ESelectParser.parse(sss18));
         // druidParser();
 //        ccparser();
 //        ESQLTemplate.parseAsteriskColumn(sql3, ReadRecordModel.class);

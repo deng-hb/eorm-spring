@@ -23,4 +23,5 @@ public class SelectSQL {
     // 别名,表名（或者是临时表）
     private Map<String, String> table = new HashMap<>();
 
+    private String sql;
 }

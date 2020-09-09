@@ -2,10 +2,11 @@ package com.denghb.eorm.impl;
 
 import com.denghb.eorm.Eorm;
 import com.denghb.eorm.EormException;
+import com.denghb.eorm.support.ESelectParser;
 import com.denghb.eorm.support.ETableColumnParser;
 import com.denghb.eorm.support.ETraceSupport;
 import com.denghb.eorm.support.domain.Trace;
-import com.denghb.eorm.template.EAsteriskColumn;
+import com.denghb.eorm.support.EAsteriskColumn;
 import com.denghb.eorm.template.ESQLTemplate;
 import com.denghb.eorm.support.domain.Column;
 import com.denghb.eorm.support.domain.Table;
@@ -27,6 +28,7 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -132,11 +134,12 @@ public class EormImpl implements Eorm {
             if (EReflectUtils.isSingleClass(clazz)) {
                 list = namedParameterJdbcTemplate.queryForList(sql, params, clazz);
             } else {
-                EAsteriskColumn ac = ESQLTemplate.parseAsteriskColumn(sql, clazz);
+                EAsteriskColumn ac = ESelectParser.parse(sql, clazz);
                 if (ac.getFields().isEmpty()) {
                     list = namedParameterJdbcTemplate.query(sql, params, BeanPropertyRowMapper.newInstance(clazz));
                 } else {
-                    list = loadAsteriskColumn(clazz, ac, params);
+                    List<Map<String, Object>> mapList = namedParameterJdbcTemplate.queryForList(ac.getTsql(), params);
+                    list = loadAsteriskListMap(mapList, clazz, ac);
                 }
             }
         } else {
@@ -151,13 +154,25 @@ public class EormImpl implements Eorm {
                 if (EReflectUtils.isSingleClass(clazz)) {
                     list = jdbcTemplate.queryForList(sql, clazz);
                 } else {
-                    list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(clazz));
+                    EAsteriskColumn ac = ESelectParser.parse(sql, clazz);
+                    if (ac.getFields().isEmpty()) {
+                        list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(clazz));
+                    } else {
+                        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(ac.getTsql());
+                        list = loadAsteriskListMap(mapList, clazz, ac);
+                    }
                 }
             } else {
                 if (EReflectUtils.isSingleClass(clazz)) {
                     list = jdbcTemplate.queryForList(sql, clazz, args);
                 } else {
-                    list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(clazz), args);
+                    EAsteriskColumn ac = ESelectParser.parse(sql, clazz);
+                    if (ac.getFields().isEmpty()) {
+                        list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(clazz), args);
+                    } else {
+                        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(ac.getTsql(), args);
+                        list = loadAsteriskListMap(mapList, clazz, ac);
+                    }
                 }
             }
         }
@@ -171,9 +186,7 @@ public class EormImpl implements Eorm {
         return list;
     }
 
-    private <T> List<T> loadAsteriskColumn(Class<T> clazz, EAsteriskColumn ac, Map<String, Object> params) {
-        String sql = ac.getTsql();
-        List<Map<String, Object>> mapList = namedParameterJdbcTemplate.queryForList(sql, params);
+    private <T> List<T> loadAsteriskListMap(List<Map<String, Object>> mapList, Class<T> clazz, EAsteriskColumn ac) {
 
         List<T> list = new ArrayList<>();
         for (Map<String, Object> map : mapList) {
