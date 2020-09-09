@@ -11,6 +11,8 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.util.JdbcConstants;
 import com.denghb.eorm.support.ETableColumnParser;
 import com.denghb.eorm.support.domain.Column;
+import com.denghb.eorm.support.domain.SelectSQL;
+import com.denghb.eorm.support.domain.SelectTable;
 import com.denghb.eorm.support.domain.Table;
 import com.denghb.eorm.template.EAsteriskColumn;
 import com.denghb.eorm.template.ESQLTemplate;
@@ -26,13 +28,10 @@ import org.junit.Test;
 
 import java.io.StringReader;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author denghb
@@ -79,9 +78,14 @@ public class SelectMoreTest extends BaseTest {
     @Test
     public void parse() throws JSQLParserException {
         // 解析子查询
-        String tsql = ""/*{
+        String tsql1 = ""/*{
             select s.*, s1.* from student s inner join (
                 select a.id, a.name from student a where gender in (1)
+            ) s1 on s1.id = s.id
+        }*/;
+        String tsql = ""/*{
+            select s.*, s1.* from student s inner join (
+                select * from student
             ) s1 on s1.id = s.id
         }*/;
         tsql = ESQLTemplate.format(tsql);
@@ -146,6 +150,7 @@ public class SelectMoreTest extends BaseTest {
 
                     String s = tsql.substring(start2, i);
                     System.out.println(s);
+                    List<String> cc = new ArrayList<>();
                     StringBuilder column = new StringBuilder();
                     int s2 = 0;
                     for (int k = 0; k < s.length(); k++) {
@@ -156,17 +161,20 @@ public class SelectMoreTest extends BaseTest {
                             s2++;
                         } else if (')' == c1) {
                             s2--;
-                        } else if (',' == c1) {
+                        } else if (s2 == 0 && ',' == c1) {
                             System.out.println(column);
+                            cc.add(column.toString());
                             column = new StringBuilder();
                         } else if (ESQLTemplate.hasNextKeyword(s, " from ", k)) {
                             System.out.println(column);
+                            cc.add(column.toString());
                             break;
                         } else if (' ' == c1) {
                         } else {
                             column.append(c1);
                         }
                     }
+                    System.out.println(cc);
                 }
                 table.append(c);
             }
@@ -183,14 +191,191 @@ public class SelectMoreTest extends BaseTest {
          */
     }
 
-    String sss = ""/*{
-select s.*, s1.* from student s inner join ( select a.id, a.name from student a ) s1 on s1.id = s.id
+    private static SelectSQL parse(String sql) {
+        SelectSQL ss = new SelectSQL();
+
+        sql = ESQLTemplate.format(sql);
+        StringBuilder field = new StringBuilder();
+        int ct = 0;
+        int start = 0;
+        for (int i = 0; i < sql.length(); i++) {
+            char c = sql.charAt(i);
+            if (ESQLTemplate.hasNextKeyword(sql, "select ", i)) {
+                i += 6;
+            } else if (ESQLTemplate.hasNextKeyword(sql, " from ", i)) {
+                ss.getFields().add(field.toString().trim());
+                i += 5;
+                start = i;
+
+                boolean hasTable = true;
+                for (; i < sql.length(); i++) {
+                    c = sql.charAt(i);
+                    if (ESQLTemplate.hasNextKeyword(sql, " join ", i)) {
+                        i += 5;
+                        SelectTable st = getTable(sql, i);
+                        ss.getTable().put(st.getAlias(), st.getTable());
+                        i = st.getIndex();
+                    } else if (' ' == c) {
+
+                    } else if (',' == c) {
+                        i++;
+                        SelectTable st = getTable(sql, i);
+                        ss.getTable().put(st.getAlias(), st.getTable());
+                        i = st.getIndex();
+                    } else {
+                        if (hasTable) {
+                            SelectTable st = getTable(sql, i);
+                            ss.getTable().put(st.getAlias(), st.getTable());
+                            i = st.getIndex();
+                            hasTable = false;
+                        }
+                    }
+
+                }
+                break;
+            } else {
+                if ('(' == c) {
+                    ct++;
+                } else if (')' == c) {
+                    ct--;
+                } else if (0 == ct && ',' == c) {
+                    ss.getFields().add(field.toString().trim());
+                    field = new StringBuilder();
+                    continue;
+                }
+                field.append(c);
+            }
+        }
+        // 是那种xxx.*的
+        List<String> fields = ss.getFields().stream().filter(f -> f.endsWith(".*")).collect(Collectors.toList());
+
+        return ss;
+    }
+
+    private static SelectTable getTable(String sql, int i) {
+        SelectTable st = new SelectTable();
+        boolean isSpace = false;
+        StringBuilder table = new StringBuilder();
+        StringBuilder alias = new StringBuilder();
+        f1:
+        for (; i < sql.length(); i++) {
+            char c = sql.charAt(i);
+            if ('(' == c) {// 子查询
+                int ct = 1;
+                i++;
+                for (; i < sql.length(); i++) {
+                    c = sql.charAt(i);
+                    if (')' == c) {
+                        ct--;
+                        continue;
+                    }
+                    if (ct == 0) {
+                        // 找别名 除了"as"
+                        isSpace = false;
+                        for (; i < sql.length(); i++) {
+                            c = sql.charAt(i);
+                            if (ESQLTemplate.hasNextKeyword(sql, " as ", i)) {
+                                i += 3;
+                            } else if (' ' == c) {
+                                if (isSpace) {
+                                    break f1;
+                                }
+                                isSpace = true;
+                            } else if (',' == c) {
+                                i--;
+                                break f1;
+                            } else {
+                                alias.append(c);
+                            }
+                        }
+
+                        break f1;
+                    }
+                    table.append(c);
+                }
+            } else if (' ' == c) {
+                if (table.length() > 0) {
+                    if (isSpace) {
+                        break;
+                    }
+                    isSpace = true;
+                }
+            } else if (',' == c) {
+                i--;
+                break;
+            } else {
+                if (isSpace) {
+                    alias.append(c);
+                } else {
+                    table.append(c);
+                }
+            }
+        }
+        String a = alias.toString().trim();
+        String t = table.toString().trim();
+        if (hasKeywords(a)) {
+            a = t;
+        }
+        st.setAlias(a);
+        st.setTable(t);
+        st.setIndex(i);
+        return st;
+    }
+
+    private static boolean hasKeywords(String alias) {
+        alias = alias.toLowerCase();
+        return Arrays.asList("left", "right", "inner", "on", "order", "group", "having", "where").contains(alias);
+    }
+
+
+    static String sss = ""/*{
+select s.*, s1.* from student s inner join ( select a.id, a.name from student2 a ) s1 on s1.id = s.id
+    }*/;
+    static String sss1 = ""/*{
+select a.id, a.name from student a
+    }*/;
+    static String sss2 = ""/*{
+select * from student
+    }*/;
+    static String sss3 = ""/*{
+select s.*, s1.* from student s , ( select a.id, a.name from student2 a ) s1 where s1.id = s.id
+    }*/;
+    static String sss4 = ""/*{
+select a.a, a.b, a.c, b.c, b.d, b.f from a LEFT OUT JOIN b ON a.a = b.c
+    }*/;
+    static String sss5 = ""/*{
+select * from a left inner join b on a.a=b.b right inner join c on a.a=c.c inner join d on a.a=d.d
     }*/;
 
+    static String sss6 = ""/*{
+select top 10 b.* from (select top 20 主键字段,排序字段 from 表名 order by 排序字段 desc) a,表名 b where b.主键字段 = a.主键字段 order by a.排序字段
+    }*/;
+    static String sss7 = ""/*{
+select type,sum(case vender when 'A' then pcs else 0 end),sum(case vender when 'C' then pcs else 0 end),sum(case vender when 'B' then pcs else 0 end) FROM tablename group by type
+    }*/;
+    static String sss8 = ""/*{
+select top 5 * from (select top 15 * from table order by id asc) table_别名 order by id desc
+    }*/;
+    static String sss9 = ""/*{
+select name from syscolumns where id in (select id from sysobjects where type = 'u' and name = '表名')
+    }*/;
+    static String sss10 = ""/*{
+select a.* from sysobjects a, syscomments b where a.id = b.id and b.text like '%表名%'
+    }*/;
+    static String sss11 = ""/*{
+select column_name,data_type from information_schema.columns
+    where table_name = '表名'
+    }*/;
+
+
     public static void main(String[] args) {
+
+        SelectSQL ss = parse("select a.id, a.name from student2 a");
+
+        System.out.println(ss);
         // druidParser();
 //        ccparser();
-        ESQLTemplate.parseAsteriskColumn(sql3, ReadRecordModel.class);
+//        ESQLTemplate.parseAsteriskColumn(sql3, ReadRecordModel.class);
     }
 
 
