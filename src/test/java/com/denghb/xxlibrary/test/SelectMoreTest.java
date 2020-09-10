@@ -186,9 +186,14 @@ public class SelectMoreTest extends BaseTest {
     @Test
     public void test2() {
 
+        String tsql1 = ""/*{
+            select s.*, s1.* from student s inner join (
+                select a.* from student a
+            ) s1 on s1.id = s.id
+        }*/;
         String tsql = ""/*{
             select s.*, s1.* from student s inner join (
-                select * from student
+                select a.id, a.name from student a
             ) s1 on s1.id = s.id
         }*/;
         EAsteriskColumn ac = ESelectParser.parse(tsql, TestSubSelectModel.class);

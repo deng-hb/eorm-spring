@@ -56,20 +56,32 @@ public abstract class ESelectParser {
                     SelectSQL ss1 = parse(tableName);
                     List<String> ff = ss1.getFields();
                     if (ff.size() == 1 && "*".equals(ff.get(0))) {
-                        String tn = ss1.getTable().keySet().iterator().next();
-                        columns = ETableColumnParser.getTable(tn).getAllColumns().stream().map(Column::getName).collect(Collectors.toList());
+                        String table = ss1.getTable().keySet().iterator().next();
+                        columns = ETableColumnParser.getTable(table).getAllColumns().stream().map(Column::getName).collect(Collectors.toList());
                     } else {
                         for (String f : ff) {
                             // x.a , count(a) as c
                             StringBuilder sb = new StringBuilder();
                             for (int i = f.length() - 1; i > 0; i--) {
                                 char c = f.charAt(i);
+                                if ('`' == c) {
+                                    continue;
+                                }
                                 if (' ' == c || '.' == c || ')' == c) {
                                     break;
                                 }
                                 sb.append(c);
                             }
-                            columns.add(sb.reverse().toString());
+                            // a.*
+                            String column = sb.reverse().toString();
+                            if ("*".equals(column)) {
+                                String a = f.substring(0, f.length() - 2);
+                                String table = ss1.getTable().get(a);
+                                List<String> columns2 = ETableColumnParser.getTable(table).getAllColumns().stream().map(Column::getName).collect(Collectors.toList());
+                                columns.addAll(columns2);
+                            } else {
+                                columns.add(column);
+                            }
                         }
                     }
                 } else {
