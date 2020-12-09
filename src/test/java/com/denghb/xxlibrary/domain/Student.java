@@ -24,6 +24,10 @@ public class Student implements java.io.Serializable {
     @Ecolumn(name = "gender")
     private Integer gender;
 
+    /** 0:女，1:男 */
+    @Ecolumn(name = "age")
+    private Integer age;
+
     /** 生日 */
     @Ecolumn(name = "birthday")
     private java.util.Date birthday;

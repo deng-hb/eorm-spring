@@ -3,6 +3,8 @@ package com.denghb.eorm.utils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -152,14 +154,14 @@ public class EReflectUtils {
     }
 
     /**
-     * 单类型
-     * TODO
+     * 基本单类型
      *
      * @param clazz
      * @return
      */
     public static boolean isSingleClass(Class<?> clazz) {
-        return clazz.isPrimitive() || Number.class.isAssignableFrom(clazz) || CharSequence.class.isAssignableFrom(clazz) || Date.class.isAssignableFrom(clazz);
+        return clazz.isPrimitive() || Number.class.isAssignableFrom(clazz) || CharSequence.class.isAssignableFrom(clazz)
+                || Date.class.isAssignableFrom(clazz) || Blob.class.isAssignableFrom(clazz) || Clob.class.isAssignableFrom(clazz);
     }
 
     /**

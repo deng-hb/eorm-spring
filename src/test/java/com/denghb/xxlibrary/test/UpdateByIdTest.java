@@ -3,11 +3,13 @@ package com.denghb.xxlibrary.test;
 import com.denghb.xxlibrary.domain.Student;
 import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 
 /**
  * @author denghb
  * @Date: 2019-05-26 00:49
  */
+@EnableAutoConfiguration
 public class UpdateByIdTest extends BaseTest {
 
     @Test

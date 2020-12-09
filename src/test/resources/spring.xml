@@ -47,4 +47,8 @@
 
     <bean id="bookService" class="com.denghb.xxlibrary.service.impl.BookServiceImpl" />
 
+    <bean id="core" class="com.denghb.eorm.impl.CoreImpl" >
+        <constructor-arg index="0" ref="dataSource" />
+    </bean>
+
 </beans>
