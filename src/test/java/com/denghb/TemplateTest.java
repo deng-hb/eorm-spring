@@ -1,9 +1,6 @@
 package com.denghb;
 
-import com.denghb.eorm.template.ESQLTemplate;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
+import com.denghb.eorm.utils.ESQLTemplateUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,10 +21,10 @@ public class TemplateTest {
 
         Map<String, Object> params = new HashMap<>();
         params.put("name", "");
-        String res = ESQLTemplate.format(sql, params);
+        String res = ESQLTemplateUtils.format(sql, params);
         System.out.println(res);
 
-        String res2 = ESQLTemplate.parse(res, params);
+        String res2 = ESQLTemplateUtils.parse(res, params);
         System.out.println(res2);
     }
 

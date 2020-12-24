@@ -7,7 +7,7 @@ import lombok.Data;
  * @since 2019-07-13 23:07
  */
 @Data
-public class Trace {
+public class ETrace {
 
     private String id;
 

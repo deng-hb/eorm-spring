@@ -2,23 +2,17 @@
 package com.denghb.eorm.test;
 
 import com.denghb.eorm.Core;
-import com.denghb.eorm.Eorm;
-import com.denghb.eorm.impl.CoreImpl;
+import com.denghb.eorm.EOrm;
 import com.denghb.eorm.support.EPrepareStatementHandler;
 import com.denghb.xxlibrary.domain.Student;
 import com.denghb.xxlibrary.model.ReadRecordModel;
 import com.denghb.xxlibrary.model.TestSubSelectModel;
-import org.apache.commons.lang3.RandomUtils;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DecimalFormat;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -34,7 +28,7 @@ public class CoreTest {
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
         ClassPathXmlApplicationContext ctx2 = new ClassPathXmlApplicationContext("classpath:spring.xml");
 
-        Eorm eorm = ctx2.getBean(Eorm.class);
+        EOrm eorm = ctx2.getBean(EOrm.class);
 
 
         Core core = (Core) ctx2.getBean("core");
@@ -45,7 +39,7 @@ public class CoreTest {
                 select a.id, a.name from student a limit 10
             ) s1 on s1.id = s.id limit 10
         }*/;
-        List<TestSubSelectModel> list0 = core.select(TestSubSelectModel.class, tsql);
+        List<TestSubSelectModel> list0 = eorm.select(TestSubSelectModel.class, tsql);
         List<TestSubSelectModel> list = core.select(TestSubSelectModel.class, "select * from book b,read_record,student s where student_id = s.id and book_id = b.id limit 10");
         List<ReadRecordModel> list2 = core.select(ReadRecordModel.class, "select * from book,read_record,student where student_id = student.id and book_id = book.id limit 10");
 

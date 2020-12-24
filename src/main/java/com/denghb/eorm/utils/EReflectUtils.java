@@ -1,6 +1,9 @@
 package com.denghb.eorm.utils;
 
 
+import com.denghb.eorm.annotation.ETable;
+import com.denghb.eorm.support.domain.EClassRef;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.Blob;
@@ -14,7 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EReflectUtils {
 
-    private final static Map<String, Set<Field>> FIELD_CACHE = new ConcurrentHashMap<String, Set<Field>>();
+    private final static Map<String, Set<Field>> FIELD_CACHE = new ConcurrentHashMap<String, Set<Field>>(200);
+    private final static Map<String, EClassRef> CLASS_REF_CACHE = new ConcurrentHashMap<String, EClassRef>(200);
 
     /**
      * 获得实体类的所有属性（该方法递归的获取当前类及父类中声明的字段。最终结果以list形式返回）
@@ -40,6 +44,7 @@ public class EReflectUtils {
             Set<Field> superClassFields = getFields(superclass);
             fields.addAll(superClassFields);
         }
+        FIELD_CACHE.put(clazz.getName(), fields);
         return fields;
     }
 
@@ -239,5 +244,51 @@ public class EReflectUtils {
             }
         }
         return builder.toString();
+    }
+
+    public static EClassRef getClassRef(Class<?> clazz) {
+        String className = clazz.getName();
+        EClassRef ref = CLASS_REF_CACHE.get(className);
+        if (null != ref) {
+            return ref;
+        }
+        ref = new EClassRef();
+        CLASS_REF_CACHE.put(className, ref);
+
+        Set<Field> fields = EReflectUtils.getFields(clazz);
+        for (Field field : fields) {
+            String fieldName = convertName(field.getName());
+            if (!EReflectUtils.isSingleClass(field.getType())) {
+                EClassRef.ESubClassRef subClassRef = new EClassRef.ESubClassRef();
+                subClassRef.setField(field);
+
+                Class<?> clazz2 = field.getType();
+                // 放置
+                ETable etable = clazz2.getAnnotation(ETable.class);
+                if (null != etable) {
+                    ref.getTableMap().put(etable.name(), subClassRef);
+                }
+                ref.getTableMap().put(fieldName, subClassRef);
+                //
+                Set<Field> field2s = EReflectUtils.getFields(clazz2);
+                for (Field field2 : field2s) {
+                    String fieldName2 = convertName(field2.getName());
+                    subClassRef.getColumnMap().put(fieldName2, field2);
+                }
+            } else {
+                ref.getColumnMap().put(fieldName, field);
+            }
+        }
+        return ref;
+    }
+
+    /**
+     * 优化 驼峰下划线命名格式，需要避免名称冲突
+     * 名称统一转换为小写且无下划线格式
+     * nick_name -> nickname
+     * nickName -> nickname
+     */
+    public static String convertName(String name) {
+        return name.toLowerCase().replaceAll("_", "");
     }
 }

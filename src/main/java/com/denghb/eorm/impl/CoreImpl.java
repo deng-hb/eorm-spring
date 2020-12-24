@@ -2,10 +2,15 @@
 package com.denghb.eorm.impl;
 
 import com.denghb.eorm.Core;
-import com.denghb.eorm.EormException;
-import com.denghb.eorm.annotation.Etable;
+import com.denghb.eorm.EOrmException;
 import com.denghb.eorm.support.EPrepareStatementHandler;
+import com.denghb.eorm.support.ETraceHolder;
+import com.denghb.eorm.support.domain.EClassRef;
+import com.denghb.eorm.support.domain.ETrace;
+import com.denghb.eorm.utils.ESQLTemplateUtils;
 import com.denghb.eorm.utils.EReflectUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -18,12 +23,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * FIXME 简单介绍该类
@@ -49,41 +54,144 @@ public class CoreImpl implements Core {
 
     @Override
     public int execute(String sql, Object... args) {
+
+        ETraceHolder.start();
+        ETrace trace = ETraceHolder.get();
+        sql = ESQLTemplateUtils.format(sql);
+        String tid = trace.getId();
+
+        Log log = LogFactory.getLog(trace.getLogName());
+        boolean logDebug = log.isDebugEnabled();
+        if (logDebug) {
+            log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
+        }
         Connection conn = null;
         PreparedStatement ps = null;
         try {
             conn = DataSourceUtils.getConnection(getDataSource());
             ps = conn.prepareStatement(sql);
             int i = 1;
-            EPrepareStatementHandler handler = null;
+            List<EPrepareStatementHandler> handlers = new ArrayList<EPrepareStatementHandler>();
+
+            StringBuilder argsLog = new StringBuilder();
+
             for (Object object : args) {
                 if (object instanceof EPrepareStatementHandler) {
-                    handler = (EPrepareStatementHandler) object;
+                    EPrepareStatementHandler handler = (EPrepareStatementHandler<?>) object;
+                    handlers.add(handler);
                     continue;
                 }
                 ps.setObject(i, object);
+                argsLog.append(object);
                 //StatementCreatorUtils.setParameterValue(ps, i, StatementCreatorUtils.javaTypeToSqlParameterType(object.getClass()), object);
                 i++;
             }
 
+            if (logDebug) {
+                log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, argsLog));
+                log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+            }
             int rows = ps.executeUpdate();
 
             // , Statement.RETURN_GENERATED_KEYS
             // ResultSet rs = ps.getGeneratedKeys();
 //            ResultSet rs = ps.executeQuery("select last_insert_id() as id");
-            if (null != handler) {
-                Object result = handler.onExecute(ps);
-                handler.setResult(result);
+            if (!handlers.isEmpty()) {
+                for (EPrepareStatementHandler handler : handlers) {
+                    Object result = handler.onExecute(ps);
+                    handler.setResult(result);
+                }
+            }
+
+            if (logDebug) {
+                log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, rows));
+                log.debug(MessageFormat.format("({0}) <- Taking      :{1}ms", tid, (System.currentTimeMillis() - trace.getStartTime())));
             }
             return rows;
         } catch (Exception e) {
-            throw new EormException(e.getMessage());
+            throw new EOrmException(e.getMessage(), e);
         } finally {
             //关闭资源
             JdbcUtils.closeStatement(ps);
             //释放资源
             DataSourceUtils.releaseConnection(conn, getDataSource());
+
+            ETraceHolder.end();
         }
+    }
+
+    @Override
+    public <T> List<T> select(Class<T> clazz, String sql, Object... args) {
+        ETraceHolder.start();
+        ETrace trace = ETraceHolder.get();
+        String tid = trace.getId();
+
+        Log log = LogFactory.getLog(trace.getLogName());
+        boolean logDebug = log.isDebugEnabled();
+        if (logDebug) {
+            log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
+        }
+        sql = ESQLTemplateUtils.format(sql);
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        List<T> list = null;
+        try {
+            conn = DataSourceUtils.getConnection(getDataSource());
+            ps = conn.prepareStatement(sql);
+            int i = 1;
+
+            StringBuilder argsLog = new StringBuilder();
+            List<EPrepareStatementHandler> handlers = new ArrayList<EPrepareStatementHandler>();
+            for (Object object : args) {
+                if (object instanceof EPrepareStatementHandler) {
+                    EPrepareStatementHandler handler = (EPrepareStatementHandler<?>) object;
+                    handlers.add(handler);
+                    continue;
+                }
+                ps.setObject(i, object);
+                argsLog.append(object);
+                //StatementCreatorUtils.setParameterValue(ps, i, StatementCreatorUtils.javaTypeToSqlParameterType(object.getClass()), object);
+                i++;
+            }
+
+            if (logDebug) {
+                log.debug(MessageFormat.format("({0}) -> Parameters  :{1}", tid, argsLog));
+                log.debug(MessageFormat.format("({0}) -> Execute SQL :{1}", tid, sql));
+            }
+            rs = ps.executeQuery();
+            list = toList(rs, clazz);
+
+            if (!handlers.isEmpty()) {
+                for (EPrepareStatementHandler handler : handlers) {
+                    Object result = handler.onExecute(ps);
+                    handler.setResult(result);
+                }
+            }
+
+            if (logDebug) {
+                log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, list.size()));
+                log.debug(MessageFormat.format("({0}) <- Taking      :{1}ms", tid, (System.currentTimeMillis() - trace.getStartTime())));
+            }
+            return list;
+
+        } catch (Exception e) {
+            throw new EOrmException(e.getMessage(), e);
+        } finally {
+            //关闭资源
+            JdbcUtils.closeResultSet(rs);
+            JdbcUtils.closeStatement(ps);
+            //释放资源
+            DataSourceUtils.releaseConnection(conn, getDataSource());
+
+            ETraceHolder.end();
+
+        }
+    }
+
+    protected ConversionService getConversionService() {
+        return DefaultConversionService.getSharedInstance();
     }
 
     /**
@@ -100,7 +208,7 @@ public class CoreImpl implements Core {
     private <T> List<T> toList(ResultSet rs, Class<T> clazz) throws Exception {
         ResultSetMetaData md = rs.getMetaData(); //获得结果集结构信息,元数据
         int columnCount = md.getColumnCount();   //获得列数
-        ConversionService service = DefaultConversionService.getSharedInstance();
+        ConversionService service = getConversionService();
 
         List<T> list = new ArrayList<T>();
         if (Map.class.isAssignableFrom(clazz)) {
@@ -117,23 +225,7 @@ public class CoreImpl implements Core {
             }
         } else {
 
-            // tableName, Field
-            Map<String, Field> tableFieldMap = new HashMap<>();
-
-            Set<Field> fields = EReflectUtils.getFields(clazz);
-            Map<String, Field> fieldMap = new HashMap<>();
-            for (Field field : fields) {
-                String fieldName = field.getName().toLowerCase().replaceAll("_", "");
-                if (!EReflectUtils.isSingleClass(field.getType())) {
-                    Etable etable = field.getType().getAnnotation(Etable.class);
-                    if (null != etable) {
-                        tableFieldMap.put(etable.name(), field);
-                    }
-                    tableFieldMap.put(fieldName, field);
-                } else {
-                    fieldMap.put(fieldName, field);
-                }
-            }
+            EClassRef classRef = EReflectUtils.getClassRef(clazz);
             T result = null;
             while (rs.next()) {
                 result = clazz.newInstance();
@@ -144,31 +236,25 @@ public class CoreImpl implements Core {
                     if (tableNames.contains(tableName)) {
                         continue;
                     }
-                    Field objectField = tableFieldMap.get(tableName);
-                    if (null != objectField) {
+                    EClassRef.ESubClassRef subClassRef = classRef.getTableMap().get(tableName);
+                    if (null != subClassRef) {
                         tableNames.add(tableName);
-                        Class<?> clazz2 = objectField.getType();
-                        Object object2 = EReflectUtils.constructorInstance(clazz2);
-                        EReflectUtils.setFieldValue(objectField, result, object2);
 
-                        Set<Field> field2s = EReflectUtils.getFields(clazz2);
-                        Map<String, Field> field2Map = new HashMap<>();
+                        Field object2Field = subClassRef.getField();
+                        Object object2 = EReflectUtils.constructorInstance(object2Field.getType());
+                        EReflectUtils.setFieldValue(object2Field, result, object2);
 
-                        for (Field field2 : field2s) {
-                            String fieldName2 = field2.getName().toLowerCase().replaceAll("_", "");
-                            field2Map.put(fieldName2, field2);
-                        }
                         for (int j = i; j <= columnCount; j++) {
-                            String columnName2 = md.getColumnName(j).toLowerCase().replaceAll("_", "");
-                            Field field2 = field2Map.get(columnName2);
+                            String columnName2 = EReflectUtils.convertName(md.getColumnName(j));
+                            Field field2 = subClassRef.getColumnMap().get(columnName2);
                             if (null != field2) {
                                 EReflectUtils.setFieldValue(field2, object2, service.convert(rs.getObject(j), field2.getType()));
                             }
                         }
 
                     } else {
-                        String columnName = md.getColumnName(i).toLowerCase().replaceAll("_", "");
-                        Field field = fieldMap.get(columnName);
+                        String columnName = EReflectUtils.convertName(md.getColumnName(i));
+                        Field field = classRef.getColumnMap().get(columnName);
                         if (null != field) {
                             EReflectUtils.setFieldValue(field, result, service.convert(rs.getObject(i), field.getType()));
                         }
@@ -176,48 +262,6 @@ public class CoreImpl implements Core {
 
                 }
             }
-        }
-        return list;
-    }
-
-    @Override
-    public <T> List<T> select(Class<T> clazz, String sql, Object... args) {
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        ResultSet rs1 = null;
-        List<T> list = null;
-        try {
-            conn = DataSourceUtils.getConnection(getDataSource());
-            ps = conn.prepareStatement(sql);
-            int i = 1;
-            EPrepareStatementHandler handler = null;
-            for (Object object : args) {
-                if (object instanceof EPrepareStatementHandler) {
-                    handler = (EPrepareStatementHandler) object;
-                    continue;
-                }
-                ps.setObject(i, object);
-                //StatementCreatorUtils.setParameterValue(ps, i, StatementCreatorUtils.javaTypeToSqlParameterType(object.getClass()), object);
-                i++;
-            }
-            rs = ps.executeQuery();
-            list = toList(rs, clazz);
-
-            if (null != handler) {
-                Object result = handler.onExecute(ps);
-                handler.setResult(result);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            //关闭资源
-            JdbcUtils.closeResultSet(rs);
-            JdbcUtils.closeResultSet(rs1);
-            JdbcUtils.closeStatement(ps);
-            //释放资源
-            DataSourceUtils.releaseConnection(conn, getDataSource());
         }
         return list;
     }

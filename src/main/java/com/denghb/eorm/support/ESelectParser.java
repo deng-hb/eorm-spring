@@ -4,8 +4,7 @@ package com.denghb.eorm.support;
 import com.denghb.eorm.support.domain.Column;
 import com.denghb.eorm.support.domain.SelectSQL;
 import com.denghb.eorm.support.domain.SelectTable;
-import com.denghb.eorm.support.domain.Table;
-import com.denghb.eorm.template.ESQLTemplate;
+import com.denghb.eorm.utils.ESQLTemplateUtils;
 import com.denghb.eorm.utils.EReflectUtils;
 
 import java.lang.reflect.Field;
@@ -112,7 +111,7 @@ public abstract class ESelectParser {
 
     public static SelectSQL parse(String sql) {
         SelectSQL ss = new SelectSQL();
-        sql = ESQLTemplate.format(sql);
+        sql = ESQLTemplateUtils.format(sql);
         ss.setSql(sql);
 
         StringBuilder field = new StringBuilder();
@@ -120,9 +119,9 @@ public abstract class ESelectParser {
 
         for (int i = 0; i < sql.length(); i++) {
             char c = sql.charAt(i);
-            if (ESQLTemplate.hasNextKeyword(sql, "select ", i)) {
+            if (ESQLTemplateUtils.hasNextKeyword(sql, "select ", i)) {
                 i += 6;
-            } else if (ESQLTemplate.hasNextKeyword(sql, " from ", i)) {
+            } else if (ESQLTemplateUtils.hasNextKeyword(sql, " from ", i)) {
                 ss.getFields().add(field.toString().trim());
                 i += 5;
 
@@ -130,7 +129,7 @@ public abstract class ESelectParser {
                 for (; i < sql.length(); i++) {
                     c = sql.charAt(i);
                     if (' ' == c) {
-                        if (ESQLTemplate.hasNextKeyword(sql, " join ", i)) {
+                        if (ESQLTemplateUtils.hasNextKeyword(sql, " join ", i)) {
                             i += 5;
                             SelectTable st = getTable(sql, i);
                             ss.getTable().put(st.getAlias(), st.getTable());
@@ -194,7 +193,7 @@ public abstract class ESelectParser {
                         for (; i < sql.length(); i++) {
                             c = sql.charAt(i);
                             if (' ' == c) {
-                                if (ESQLTemplate.hasNextKeyword(sql, " as ", i)) {
+                                if (ESQLTemplateUtils.hasNextKeyword(sql, " as ", i)) {
                                     i += 3;
                                 }
                                 if (isSpace) {

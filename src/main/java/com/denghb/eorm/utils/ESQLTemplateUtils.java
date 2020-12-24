@@ -1,26 +1,19 @@
-package com.denghb.eorm.template;
+package com.denghb.eorm.utils;
 
-import com.denghb.eorm.EormException;
-import com.denghb.eorm.support.ETableColumnParser;
-import com.denghb.eorm.support.domain.Column;
-import com.denghb.eorm.support.domain.Table;
-import com.denghb.eorm.utils.EReflectUtils;
+import com.denghb.eorm.EOrmException;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 
 /**
  * 支持使用Annotation标注表结构
  */
-public abstract class ESQLTemplate {
+public class ESQLTemplateUtils {
     // 性能？
     private static final ExpressionParser SpEL = new SpelExpressionParser();
 
@@ -339,7 +332,7 @@ public abstract class ESQLTemplate {
         for (; j < sql.length(); j++) {
             char c = sql.charAt(j);
             if (0 == counter && c != ' ' && c != '(') {
-                throw new EormException(syntax + c + " Syntax fail");
+                throw new EOrmException(syntax + c + " Syntax fail");
             }
             if ('(' == c) {
                 counter++;
@@ -361,4 +354,12 @@ public abstract class ESQLTemplate {
         return new Expression(j, el.toString());
     }
 
+    @Data
+    @AllArgsConstructor
+    public static class Expression {
+
+        private int endIndex;
+
+        private String content;
+    }
 }

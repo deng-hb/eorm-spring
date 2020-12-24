@@ -1,9 +1,9 @@
 package com.denghb.eorm.support;
 
 
-import com.denghb.eorm.EormException;
-import com.denghb.eorm.annotation.Ecolumn;
-import com.denghb.eorm.annotation.Etable;
+import com.denghb.eorm.EOrmException;
+import com.denghb.eorm.annotation.EColumn;
+import com.denghb.eorm.annotation.ETable;
 import com.denghb.eorm.support.domain.Column;
 import com.denghb.eorm.support.domain.Table;
 import com.denghb.eorm.utils.EReflectUtils;
@@ -32,9 +32,9 @@ public class ETableColumnParser {
     }
 
     public static Table load(Class<?> clazz) {
-        Etable etable = clazz.getAnnotation(Etable.class);
+        ETable etable = clazz.getAnnotation(ETable.class);
         if (null == etable) {
-            throw new EormException("not find @Etable");
+            throw new EOrmException("not find @Etable");
         }
         String tableName = etable.name();
         Table table = getTable(tableName);
@@ -48,7 +48,7 @@ public class ETableColumnParser {
         Set<Field> fields = EReflectUtils.getFields(clazz);
         for (Field field : fields) {
 
-            Ecolumn e = field.getAnnotation(Ecolumn.class);
+            EColumn e = field.getAnnotation(EColumn.class);
             if (null == e) {
                 continue;
             }
@@ -64,16 +64,16 @@ public class ETableColumnParser {
 
         }
         if (table.getAllColumns().isEmpty()) {
-            throw new EormException("not find @Ecolumn");
+            throw new EOrmException("not find @Ecolumn");
         }
         if (table.getPkColumns().isEmpty()) {
-            throw new EormException("not find @Ecolumn primaryKey = true");
+            throw new EOrmException("not find @Ecolumn primaryKey = true");
         }
         CACHE_TABLE.put(tableName, table);
         return table;
     }
 
-    private static Column buildColumn(Ecolumn e, Field field) {
+    private static Column buildColumn(EColumn e, Field field) {
         Column c = new Column();
         c.setAllowNull(e.allowNull());
         c.setComment(e.comment());
@@ -88,10 +88,10 @@ public class ETableColumnParser {
 
     public static void validate(Column column, Object value) {
         if (!column.isAllowNull() && null == value) {
-            throw new EormException("column [" + column.getName() + "] not null");
+            throw new EOrmException("column [" + column.getName() + "] not null");
         }
         if (0 < column.getCharMaxLength() && String.valueOf(value).length() > column.getCharMaxLength()) {
-            throw new EormException("column [" + column.getName() + "] length <= " + column.getCharMaxLength());
+            throw new EOrmException("column [" + column.getName() + "] length <= " + column.getCharMaxLength());
         }
     }
 

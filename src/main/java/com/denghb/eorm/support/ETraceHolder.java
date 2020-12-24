@@ -2,7 +2,7 @@ package com.denghb.eorm.support;
 
 
 
-import com.denghb.eorm.support.domain.Trace;
+import com.denghb.eorm.support.domain.ETrace;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author denghb
  * @since 2019-07-14 17:53
  */
-public class ETraceSupport {
+public class ETraceHolder {
 
     private static final String PREFIX = "E";
 
@@ -22,12 +22,12 @@ public class ETraceSupport {
 
     private static final AtomicLong counter = new AtomicLong(100000000);
 
-    private static final ThreadLocal<Trace> local = new ThreadLocal<Trace>();
+    private static final ThreadLocal<ETrace> local = new ThreadLocal<ETrace>();
 
     public static void start() {
-        Trace trace = get();
+        ETrace trace = get();
         if (null == trace) {
-            trace = new Trace();
+            trace = new ETrace();
             trace.setId(genId());
             trace.setStartTime(System.currentTimeMillis());
 
@@ -51,7 +51,7 @@ public class ETraceSupport {
         return PREFIX + counter.getAndIncrement();
     }
 
-    public static Trace get() {
+    public static ETrace get() {
         return local.get();
     }
 

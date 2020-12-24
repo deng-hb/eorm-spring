@@ -1,7 +1,7 @@
 /* Copyright © 2020 meihuasoft.com All rights reserved. */
 package com.denghb.eorm.test;
 
-import com.denghb.eorm.template.ESQLTemplate;
+import com.denghb.eorm.utils.ESQLTemplateUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +16,7 @@ public class SQLTemplateTest {
 
 
     public static void main(String[] args) {
+        int[] s = new int[]{1, 2, 3};
         String sql = ""/*{# 绅士手
             select * from student${month} s # 不知道
             '# sss'
@@ -33,9 +34,9 @@ public class SQLTemplateTest {
         Map<String, Object> params = new HashMap<>();
         params.put("month", "2017_12");
 
-        String tsql = ESQLTemplate.format(sql, params);
+        String tsql = ESQLTemplateUtils.format(sql, params);
         System.out.println(tsql);
 
-        System.out.println(ESQLTemplate.parse(tsql, params));
+        System.out.println(ESQLTemplateUtils.parse(tsql, params));
     }
 }

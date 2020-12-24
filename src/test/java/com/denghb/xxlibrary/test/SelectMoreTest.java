@@ -12,7 +12,7 @@ import com.alibaba.druid.util.JdbcConstants;
 import com.denghb.eorm.support.EAsteriskColumn;
 import com.denghb.eorm.support.ESelectParser;
 import com.denghb.eorm.support.domain.SelectSQL;
-import com.denghb.eorm.template.ESQLTemplate;
+import com.denghb.eorm.utils.ESQLTemplateUtils;
 import com.denghb.xxlibrary.model.ReadRecordModel;
 import com.denghb.xxlibrary.model.TestSubSelectModel;
 import net.sf.jsqlparser.JSQLParserException;
@@ -80,7 +80,7 @@ public class SelectMoreTest extends BaseTest {
                 select * from student
             ) s1 on s1.id = s.id
         }*/;
-        tsql = ESQLTemplate.format(tsql);
+        tsql = ESQLTemplateUtils.format(tsql);
         StringBuilder alias = new StringBuilder();
         List<String> aliasList = new ArrayList<>();
         int start = 0;
@@ -95,7 +95,7 @@ public class SelectMoreTest extends BaseTest {
                 i++;
                 continue;
             }
-            if (ESQLTemplate.hasNextKeyword(tsql, " from ", i)) {
+            if (ESQLTemplateUtils.hasNextKeyword(tsql, " from ", i)) {
                 start = i + 5;
                 break;
             }
@@ -147,7 +147,7 @@ public class SelectMoreTest extends BaseTest {
                     int s2 = 0;
                     for (int k = 0; k < s.length(); k++) {
                         char c1 = s.charAt(k);
-                        if (ESQLTemplate.hasNextKeyword(s, " select ", k)) {
+                        if (ESQLTemplateUtils.hasNextKeyword(s, " select ", k)) {
                             k += 7;
                         } else if ('(' == c1) {
                             s2++;
@@ -157,7 +157,7 @@ public class SelectMoreTest extends BaseTest {
                             System.out.println(column);
                             cc.add(column.toString());
                             column = new StringBuilder();
-                        } else if (ESQLTemplate.hasNextKeyword(s, " from ", k)) {
+                        } else if (ESQLTemplateUtils.hasNextKeyword(s, " from ", k)) {
                             System.out.println(column);
                             cc.add(column.toString());
                             break;

@@ -1,7 +1,7 @@
 package com.denghb.xxlibrary.base.impl;
 
-import com.denghb.eorm.Eorm;
-import com.denghb.eorm.EormException;
+import com.denghb.eorm.EOrm;
+import com.denghb.eorm.EOrmException;
 import com.denghb.eorm.support.ETableColumnParser;
 import com.denghb.eorm.support.domain.Column;
 import com.denghb.eorm.support.domain.Table;
@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BaseServiceImpl<T> implements BaseService<T> {
 
     @Autowired
-    private Eorm db;
+    private EOrm db;
 
     // 固定SQL缓存
     private final static Map<String, String> SQL_CACHE = new ConcurrentHashMap<String, String>();
@@ -115,7 +115,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         final Object[] args = values.toArray();
         int res = db.execute(sql, args);
         if (1 != res) {
-            throw new EormException("update fail");
+            throw new EOrmException("update fail");
         }
     }
 
@@ -131,7 +131,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         }
         int res = db.execute(sql, id);
         if (1 != res) {
-            throw new EormException("delete fail");
+            throw new EOrmException("delete fail");
         }
     }
 

@@ -1,33 +1,11 @@
 package com.denghb.eorm;
 
-import java.util.List;
-
 /**
  * Easy ROM
  *
  * @author denghb
  */
-public interface Eorm {
-
-    /**
-     * 执行一条SQL
-     *
-     * @param sql
-     * @param args
-     * @return int
-     */
-    int execute(String sql, Object... args);
-
-    /**
-     * 执行一条查询
-     *
-     * @param clazz
-     * @param sql
-     * @param args
-     * @param <T>
-     * @return List<T>
-     */
-    <T> List<T> select(Class<T> clazz, String sql, Object... args);
+public interface EOrm extends Core {
 
     /**
      * 插入一个对象
@@ -46,15 +24,6 @@ public interface Eorm {
     <T> void updateById(T domain);
 
     /**
-     * 修改一个对象
-     *
-     * @param domain
-     * @param hits
-     * @param <T>
-     */
-    <T> void updateByHits(T domain, T hits);
-
-    /**
      * 删除一个对象
      *
      * @param domain
@@ -70,14 +39,6 @@ public interface Eorm {
      * @param <T>
      */
     <T> void deleteById(Class<T> clazz, Object... id);
-
-    /**
-     * 删除一个对象
-     *
-     * @param hits
-     * @param <T>
-     */
-    <T> void deleteByHits(T hits);
 
     /**
      * 查询一个对象
