@@ -3,8 +3,8 @@ package com.denghb.xxlibrary.base.impl;
 import com.denghb.eorm.EOrm;
 import com.denghb.eorm.EOrmException;
 import com.denghb.eorm.support.ETableColumnParser;
-import com.denghb.eorm.support.domain.Column;
-import com.denghb.eorm.support.domain.Table;
+import com.denghb.eorm.support.domain.EColumnRef;
+import com.denghb.eorm.support.domain.ETableRef;
 import com.denghb.eorm.utils.EReflectUtils;
 import com.denghb.xxlibrary.base.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,11 +45,11 @@ public class BaseServiceImpl<T> implements BaseService<T> {
 
     @Override
     public void save(T domain) {
-        Table table = ETableColumnParser.load(getDomainClass());
+        ETableRef table = ETableColumnParser.getTableRef(getDomainClass());
         boolean isInsert = true;
 
-        List<Column> pkColumns = table.getPkColumns();
-        for (Column column : pkColumns) {
+        List<EColumnRef> pkColumns = table.getPrimaryKeyColumns();
+        for (EColumnRef column : pkColumns) {
             Field field = column.getField();
             Object idValue = EReflectUtils.getFieldValue(field, domain);
             if (null != idValue) {
@@ -66,7 +66,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
 
     @Override
     public void updateById(T domain) {
-        Table table = ETableColumnParser.load(getDomainClass());
+        ETableRef table = ETableColumnParser.getTableRef(getDomainClass());
         List<Object> values = new ArrayList<Object>();
 
 
@@ -74,13 +74,12 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         Object versionValue = null;
 
         StringBuilder ssb = new StringBuilder();
-        for (Column column : table.getOtherColumns()) {
+        for (EColumnRef column : table.getCommonColumns()) {
             Object value = EReflectUtils.getFieldValue(column.getField(), domain);
             if (null != value && "version".equals(column.getName())) {
                 versionValue = value;
                 continue;
             }
-            ETableColumnParser.validate(column, value);
             if (null == value) {
                 continue;
             }
@@ -93,8 +92,8 @@ public class BaseServiceImpl<T> implements BaseService<T> {
             values.add(value);
         }
 
-        List<Column> pkColumns = table.getPkColumns();
-        for (Column column : pkColumns) {
+        List<EColumnRef> pkColumns = table.getPrimaryKeyColumns();
+        for (EColumnRef column : pkColumns) {
             Object pkValue = EReflectUtils.getFieldValue(column.getField(), domain);
             values.add(pkValue);
         }
@@ -104,7 +103,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         sb.append(" set ");
         sb.append(ssb);
         sb.append(", `version` = `version` + 1");
-        sb.append(ETableColumnParser.loadWherePrimaryKey(table));
+        sb.append(table.getWherePrimaryKeyColumns());
         sb.append(" and `deleted` = 0 ");
         if (null != versionValue) {
             sb.append(" and `version` = ? ");
@@ -125,7 +124,7 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         String key = clazz.getName() + "#deleteById";
         String sql = SQL_CACHE.get(key);
         if (null == sql) {
-            Table table = ETableColumnParser.load(clazz);
+            ETableRef table = ETableColumnParser.getTableRef(clazz);
             sql = "update " + table.getName() + " set deleted = 1 where id = ? and deleted = 0";
             SQL_CACHE.put(key, sql);
         }
@@ -142,20 +141,14 @@ public class BaseServiceImpl<T> implements BaseService<T> {
         String sql = SQL_CACHE.get(key);
         if (null == sql) {
             // 表名
-            Table table = ETableColumnParser.load(clazz);
+            ETableRef table = ETableColumnParser.getTableRef(clazz);
 
             StringBuilder sb = new StringBuilder("select ");
-
-            List<Column> columns = table.getAllColumns();
-            for (Column column : columns) {
-                sb.append(",`");
-                sb.append(column.getName());
-                sb.append("`");
-            }
+            sb.append(table.getColumns());
 
             sb.append(" from ");
             sb.append(table.getName());
-            sb.append(ETableColumnParser.loadWherePrimaryKey(table));
+            sb.append(table.getWherePrimaryKeyColumns());
             sb.append(" and `deleted` = 0 ");
 
             sql = sb.toString();

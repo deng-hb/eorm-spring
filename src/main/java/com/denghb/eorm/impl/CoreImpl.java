@@ -3,12 +3,12 @@ package com.denghb.eorm.impl;
 
 import com.denghb.eorm.Core;
 import com.denghb.eorm.EOrmException;
-import com.denghb.eorm.support.EPrepareStatementHandler;
+import com.denghb.eorm.support.EKeyHolder;
 import com.denghb.eorm.support.ETraceHolder;
 import com.denghb.eorm.support.domain.EClassRef;
 import com.denghb.eorm.support.domain.ETrace;
-import com.denghb.eorm.utils.ESQLTemplateUtils;
 import com.denghb.eorm.utils.EReflectUtils;
+import com.denghb.eorm.utils.ESQLTemplateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.convert.ConversionService;
@@ -23,9 +23,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,23 +67,33 @@ public class CoreImpl implements Core {
         }
         Connection conn = null;
         PreparedStatement ps = null;
+        ResultSet rs = null;
         try {
             conn = DataSourceUtils.getConnection(getDataSource());
-            ps = conn.prepareStatement(sql);
+
+            EKeyHolder keyHolder = null;
+            for (Object object : args) {
+                if (object instanceof EKeyHolder) {
+                    keyHolder = (EKeyHolder) object;
+                    break;
+                }
+            }
+
+            if (null != keyHolder) {
+                ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            } else {
+                ps = conn.prepareStatement(sql);
+            }
             int i = 1;
-            List<EPrepareStatementHandler> handlers = new ArrayList<EPrepareStatementHandler>();
 
             StringBuilder argsLog = new StringBuilder();
 
             for (Object object : args) {
-                if (object instanceof EPrepareStatementHandler) {
-                    EPrepareStatementHandler handler = (EPrepareStatementHandler<?>) object;
-                    handlers.add(handler);
+                if (object instanceof EKeyHolder) {
                     continue;
                 }
                 ps.setObject(i, object);
                 argsLog.append(object);
-                //StatementCreatorUtils.setParameterValue(ps, i, StatementCreatorUtils.javaTypeToSqlParameterType(object.getClass()), object);
                 i++;
             }
 
@@ -93,14 +103,13 @@ public class CoreImpl implements Core {
             }
             int rows = ps.executeUpdate();
 
-            // , Statement.RETURN_GENERATED_KEYS
-            // ResultSet rs = ps.getGeneratedKeys();
-//            ResultSet rs = ps.executeQuery("select last_insert_id() as id");
-            if (!handlers.isEmpty()) {
-                for (EPrepareStatementHandler handler : handlers) {
-                    Object result = handler.onExecute(ps);
-                    handler.setResult(result);
+            if (null != keyHolder) {
+                rs = ps.getGeneratedKeys();
+                List<Object> list = new ArrayList<Object>();
+                while (rs.next()) {
+                    list.add(rs.getObject(1));
                 }
+                keyHolder.setKeys(list);
             }
 
             if (logDebug) {
@@ -112,6 +121,7 @@ public class CoreImpl implements Core {
             throw new EOrmException(e.getMessage(), e);
         } finally {
             //关闭资源
+            JdbcUtils.closeResultSet(rs);
             JdbcUtils.closeStatement(ps);
             //释放资源
             DataSourceUtils.releaseConnection(conn, getDataSource());
@@ -143,16 +153,9 @@ public class CoreImpl implements Core {
             int i = 1;
 
             StringBuilder argsLog = new StringBuilder();
-            List<EPrepareStatementHandler> handlers = new ArrayList<EPrepareStatementHandler>();
             for (Object object : args) {
-                if (object instanceof EPrepareStatementHandler) {
-                    EPrepareStatementHandler handler = (EPrepareStatementHandler<?>) object;
-                    handlers.add(handler);
-                    continue;
-                }
                 ps.setObject(i, object);
                 argsLog.append(object);
-                //StatementCreatorUtils.setParameterValue(ps, i, StatementCreatorUtils.javaTypeToSqlParameterType(object.getClass()), object);
                 i++;
             }
 
@@ -162,13 +165,6 @@ public class CoreImpl implements Core {
             }
             rs = ps.executeQuery();
             list = toList(rs, clazz);
-
-            if (!handlers.isEmpty()) {
-                for (EPrepareStatementHandler handler : handlers) {
-                    Object result = handler.onExecute(ps);
-                    handler.setResult(result);
-                }
-            }
 
             if (logDebug) {
                 log.debug(MessageFormat.format("({0}) <- Affected    :{1}", tid, list.size()));
@@ -194,6 +190,20 @@ public class CoreImpl implements Core {
         return DefaultConversionService.getSharedInstance();
     }
 
+    protected List<Map<String, Object>> toList(ResultSet rs) throws Exception {
+        ResultSetMetaData md = rs.getMetaData();
+        int columnCount = md.getColumnCount();
+        List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+        while (rs.next()) {
+            Map<String, Object> data = new HashMap<String, Object>(columnCount);
+            for (int i = 1; i <= columnCount; i++) {
+                data.put(md.getColumnName(i), rs.getObject(i));
+            }
+            list.add(data);
+        }
+        return list;
+    }
+
     /**
      * int.class, Integer.class, String.class, Date.class
      * Entity.class, DTO.class
@@ -205,21 +215,13 @@ public class CoreImpl implements Core {
      * @return
      * @throws SQLException
      */
-    private <T> List<T> toList(ResultSet rs, Class<T> clazz) throws Exception {
-        ResultSetMetaData md = rs.getMetaData(); //获得结果集结构信息,元数据
-        int columnCount = md.getColumnCount();   //获得列数
+    protected <T> List<T> toList(ResultSet rs, Class<T> clazz) throws Exception {
+        ResultSetMetaData md = rs.getMetaData();
+        int columnCount = md.getColumnCount();
         ConversionService service = getConversionService();
 
         List<T> list = new ArrayList<T>();
-        if (Map.class.isAssignableFrom(clazz)) {
-            while (rs.next()) {
-                Map<String, Object> data = new HashMap<String, Object>(columnCount);
-                for (int i = 1; i <= columnCount; i++) {
-                    data.put(md.getColumnName(i), rs.getObject(i));
-                }
-                list.add((T) data);
-            }
-        } else if (EReflectUtils.isSingleClass(clazz)) {
+        if (EReflectUtils.isSingleClass(clazz)) {
             while (rs.next()) {
                 list.add(service.convert(rs.getObject(1), clazz));
             }

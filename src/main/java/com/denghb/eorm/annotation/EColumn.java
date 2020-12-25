@@ -23,21 +23,6 @@ public @interface EColumn {
     boolean primaryKey() default false;
 
     /**
-     * 允许空值
-     */
-    boolean allowNull() default true;
-
-    /**
-     * 字符串长度
-     */
-    int charMaxLength() default 0;
-
-    /**
-     * 默认值
-     */
-    String defaultValue() default "";
-
-    /**
      * 描述
      */
     String comment() default "";

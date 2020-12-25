@@ -1,19 +1,28 @@
 package com.denghb.eorm.utils;
 
 import com.denghb.eorm.EOrmException;
+import com.denghb.eorm.support.EKeyHolder;
+import com.denghb.eorm.support.domain.ESQLParameter;
+import com.denghb.eorm.support.domain.ETableRef;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
  * 支持使用Annotation标注表结构
  */
 public class ESQLTemplateUtils {
+
+    // <class, ETableRef>
+    private static final Map<Class<?>, ETableRef> TABLE_REF_CACHE = new ConcurrentHashMap<Class<?>, ETableRef>();
     // 性能？
     private static final ExpressionParser SpEL = new SpelExpressionParser();
 
@@ -36,6 +45,39 @@ public class ESQLTemplateUtils {
      */
     public static String format(String sql) {
         return format(sql, null);
+    }
+
+    /**
+     * 1.美化并去掉注释
+     * 2.拼接${name}
+     * 3.
+     *
+     * @param sql
+     * @param args
+     * @return
+     */
+    public static ESQLParameter parse(String sql, Object... args) {
+        ESQLParameter sp = new ESQLParameter();
+
+        List<Object> list = new ArrayList<>();
+        for (Object arg : args) {
+            if (arg instanceof EKeyHolder) {
+
+                continue;
+            }
+            list.add(arg);
+        }
+
+        if (list.size() == 1) {
+            Object object = list.get(0);
+            if (!EReflectUtils.isSingleClass(object.getClass())) {
+
+            }
+        }
+        // sql = format(sql, );
+
+
+        return sp;
     }
 
     public static String format(String sql, Map<String, Object> params) {

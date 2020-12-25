@@ -3,16 +3,16 @@ package com.denghb.eorm.test;
 
 import com.denghb.eorm.Core;
 import com.denghb.eorm.EOrm;
-import com.denghb.eorm.support.EPrepareStatementHandler;
+import com.denghb.eorm.EOrmX;
+import com.denghb.eorm.support.EKeyHolder;
+import com.denghb.eorm.support.ESQLSegment;
 import com.denghb.xxlibrary.domain.Student;
+import com.denghb.xxlibrary.domain.TbTest1;
 import com.denghb.xxlibrary.model.ReadRecordModel;
 import com.denghb.xxlibrary.model.TestSubSelectModel;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -29,10 +29,20 @@ public class CoreTest {
         ClassPathXmlApplicationContext ctx2 = new ClassPathXmlApplicationContext("classpath:spring.xml");
 
         EOrm eorm = ctx2.getBean(EOrm.class);
+        EOrmX db = ctx2.getBean(EOrmX.class);
+
+        Core core = ctx2.getBean(Core.class);
+
+        List<Student> students1 = core.select(Student.class, "select * from student limit 1");
+
+        core.execute("insert into tb_test1(id2) values (2),(3)", new EKeyHolder());
 
 
-        Core core = (Core) ctx2.getBean("core");
+        List<Student> students = db.select(new ESQLSegment<Student>().eq(Student::setAge, 40));
 
+        TbTest1 test = new TbTest1();
+        test.setId2(123232);
+        eorm.insert(test);
 
         String tsql = ""/*{
             select s.*, s1.* from student s inner join (
@@ -43,35 +53,12 @@ public class CoreTest {
         List<TestSubSelectModel> list = core.select(TestSubSelectModel.class, "select * from book b,read_record,student s where student_id = s.id and book_id = b.id limit 10");
         List<ReadRecordModel> list2 = core.select(ReadRecordModel.class, "select * from book,read_record,student where student_id = student.id and book_id = book.id limit 10");
 
-        EPrepareStatementHandler<Integer> total = new EPrepareStatementHandler<Integer>() {
-            @Override
-            public Integer onExecute(PreparedStatement ps) throws SQLException {
-
-                ResultSet rs = ps.executeQuery("select found_rows() as total_count");
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-                return null;
-            }
-        };
         // 没有count快
-        List<Student> list3 = core.select(Student.class, "select sql_calc_found_rows * from student limit 10", total);
-        int rows = total.getResult();
+        List<Student> list3 = core.select(Student.class, "select sql_calc_found_rows * from student limit 10");
 
         Integer id = 0;
-        EPrepareStatementHandler<Integer> key = new EPrepareStatementHandler<Integer>() {
-            @Override
-            public Integer onExecute(PreparedStatement ps) throws SQLException {
-                ResultSet rs = ps.executeQuery("select last_insert_id() as id");
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-                return null;
-            }
-        };
-        int s0 = core.execute("insert into student (name,gender) values (1,0)", key);
+        int s0 = core.execute("insert into student (name,gender) values (1,0)");
 
-        int id2 = key.getResult();
         int s1 = core.execute("update student set age = 2 where id = ? and name = ?", new Integer[]{1111, 2222});
         int s = core.execute("update student set age = 2 where id = ?", 100011);
         System.out.println(s);

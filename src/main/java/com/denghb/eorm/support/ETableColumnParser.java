@@ -4,14 +4,13 @@ package com.denghb.eorm.support;
 import com.denghb.eorm.EOrmException;
 import com.denghb.eorm.annotation.EColumn;
 import com.denghb.eorm.annotation.ETable;
-import com.denghb.eorm.support.domain.Column;
-import com.denghb.eorm.support.domain.Table;
+import com.denghb.eorm.support.domain.EColumnRef;
+import com.denghb.eorm.support.domain.ETableRef;
 import com.denghb.eorm.utils.EReflectUtils;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -20,135 +19,99 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ETableColumnParser {
 
-    // <tableName,Table>
-    private static final Map<String, Table> CACHE_TABLE = new ConcurrentHashMap<String, Table>();
+    // <class,Table>
+    private static final Map<Class<?>, ETableRef> TABLE_REF_CACHE = new ConcurrentHashMap<Class<?>, ETableRef>(200);
 
-    private static final Map<String, String> WHERE_PRIMARY_KEY_CACHE = new ConcurrentHashMap<String, String>();
-
-    private static final Map<String, String> ALL_COLUMN_CACHE = new ConcurrentHashMap<String, String>();
-
-    public static Table getTable(String tableName) {
-        return CACHE_TABLE.get(tableName);
-    }
-
-    public static Table load(Class<?> clazz) {
+    public static ETableRef getTableRef(Class<?> clazz) {
+        ETableRef tableRef = TABLE_REF_CACHE.get(clazz);
+        if (null != tableRef) {
+            return tableRef;
+        }
         ETable etable = clazz.getAnnotation(ETable.class);
         if (null == etable) {
-            throw new EOrmException("not find @Etable");
+            throw new EOrmException("not find @ETable");
         }
         String tableName = etable.name();
-        Table table = getTable(tableName);
-        if (null != table) {
-            return table;
-        }
-        table = new Table();
-        table.setName(tableName);
-
+        tableRef = new ETableRef();
+        tableRef.setName(tableName);
         //
-        Set<Field> fields = EReflectUtils.getFields(clazz);
+        List<Field> fields = EReflectUtils.getFields(clazz);
+
+        boolean append = false;
+        StringBuilder columns = new StringBuilder();
         for (Field field : fields) {
 
             EColumn e = field.getAnnotation(EColumn.class);
             if (null == e) {
                 continue;
             }
-            Column column = buildColumn(e, field);
-            table.getAllColumns().add(column);
+            EColumnRef column = new EColumnRef();
+            column.setField(field);
+            column.setName(e.name());
+
+            if (append) {
+                columns.append(", ");
+            }
+            columns.append("`");
+            columns.append(column.getName());
+            columns.append("`");
+            append = true;
 
             boolean primaryKey = e.primaryKey();
             if (primaryKey) {
-                table.getPkColumns().add(column);
+                tableRef.getPrimaryKeyColumns().add(column);
             } else {
-                table.getOtherColumns().add(column);
+                tableRef.getCommonColumns().add(column);
             }
 
         }
-        if (table.getAllColumns().isEmpty()) {
-            throw new EOrmException("not find @Ecolumn");
+        tableRef.setColumns(columns.toString());
+        if (columns.length() == 0) {
+            throw new EOrmException("not find @EColumn");
         }
-        if (table.getPkColumns().isEmpty()) {
-            throw new EOrmException("not find @Ecolumn primaryKey = true");
+        if (tableRef.getPrimaryKeyColumns().isEmpty()) {
+            throw new EOrmException("not find @EColumn primaryKey = true");
         }
-        CACHE_TABLE.put(tableName, table);
-        return table;
-    }
 
-    private static Column buildColumn(EColumn e, Field field) {
-        Column c = new Column();
-        c.setAllowNull(e.allowNull());
-        c.setComment(e.comment());
-
-        c.setField(field);
-        c.setName(e.name());
-        c.setCharMaxLength(e.charMaxLength());
-
-        c.setDefaultValue(e.defaultValue());
-        return c;
-    }
-
-    public static void validate(Column column, Object value) {
-        if (!column.isAllowNull() && null == value) {
-            throw new EOrmException("column [" + column.getName() + "] not null");
-        }
-        if (0 < column.getCharMaxLength() && String.valueOf(value).length() > column.getCharMaxLength()) {
-            throw new EOrmException("column [" + column.getName() + "] length <= " + column.getCharMaxLength());
-        }
-    }
-
-
-    /**
-     * 解析主键
-     *
-     * @param table 表对象
-     * @return 主键查询拼接
-     */
-    public static String loadWherePrimaryKey(Table table) {
-        String key = table.getName();
-        String where = WHERE_PRIMARY_KEY_CACHE.get(key);
-        if (null == where) {
-            StringBuilder sb = new StringBuilder(" where ");
-            boolean append = false;
-            List<Column> columns = table.getPkColumns();
-            for (Column column : columns) {
-                if (append) {
-                    sb.append(" and ");
-                }
-                sb.append("`");
-                sb.append(column.getName());
-                sb.append("` = ?");
-                append = true;
+        // 主键
+        StringBuilder wherePrimaryKeyColumns = new StringBuilder(" where ");
+        boolean append2 = false;
+        List<EColumnRef> primaryKeys = tableRef.getPrimaryKeyColumns();
+        for (EColumnRef column : primaryKeys) {
+            if (append2) {
+                wherePrimaryKeyColumns.append(" and ");
             }
-            where = sb.toString();
-            WHERE_PRIMARY_KEY_CACHE.put(key, where);
+            wherePrimaryKeyColumns.append("`");
+            wherePrimaryKeyColumns.append(column.getName());
+            wherePrimaryKeyColumns.append("` = ?");
+            append2 = true;
         }
-        return where;
+        tableRef.setWherePrimaryKeyColumns(wherePrimaryKeyColumns.toString());
+
+        // 查询语句
+        StringBuilder selectTable = new StringBuilder("select ");
+        selectTable.append(columns);
+        selectTable.append(" from ");
+        selectTable.append(tableName);
+        selectTable.append(" ");
+        tableRef.setSelectTable(selectTable.toString());
+
+        // 更新语句
+        StringBuilder updateTable = new StringBuilder();
+        updateTable.append("update ");
+        updateTable.append(tableName);
+        updateTable.append(" set ");
+        tableRef.setUpdateTable(updateTable.toString());
+
+        // 删除
+        StringBuilder deleteTable = new StringBuilder();
+        deleteTable.append("delete from ");
+        deleteTable.append(tableName);
+        deleteTable.append(" ");
+        tableRef.setDeleteTable(deleteTable.toString());
+
+        TABLE_REF_CACHE.put(clazz, tableRef);
+        return tableRef;
     }
 
-    /**
-     * 加载所有的列
-     *
-     * @param table 表对象
-     * @return 列拼接
-     */
-    public static String loadAllColumnName(Table table) {
-        String key = table.getName();
-        String columnNames = ALL_COLUMN_CACHE.get(key);
-        if (null == columnNames) {
-            StringBuilder sb = new StringBuilder();
-            boolean append = false;
-            List<Column> columns = table.getAllColumns();
-            for (Column column : columns) {
-                if (append) {
-                    sb.append(", ");
-                }
-                sb.append("`");
-                sb.append(column.getName());
-                sb.append("`");
-                append = true;
-            }
-            columnNames = sb.toString();
-            ALL_COLUMN_CACHE.put(key, columnNames);
-        }
-        return columnNames;
-    }
 }

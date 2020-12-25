@@ -38,7 +38,7 @@
         <constructor-arg index="0" ref="dataSource" />
     </bean>
 
-    <bean id="eorm" class="com.denghb.eorm.impl.EOrmImpl">
+    <bean id="eorm" class="com.denghb.eorm.impl.EOrmXImpl">
         <constructor-arg index="0" ref="dataSource" />
     </bean>
 
@@ -46,8 +46,5 @@
 
     <bean id="bookService" class="com.denghb.xxlibrary.service.impl.BookServiceImpl" />
 
-    <bean id="core" class="com.denghb.eorm.impl.CoreImpl" >
-        <constructor-arg index="0" ref="dataSource" />
-    </bean>
 
 </beans>

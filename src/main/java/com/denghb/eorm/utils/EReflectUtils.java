@@ -17,18 +17,18 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EReflectUtils {
 
-    private final static Map<String, Set<Field>> FIELD_CACHE = new ConcurrentHashMap<String, Set<Field>>(200);
+    private final static Map<String, List<Field>> FIELD_CACHE = new ConcurrentHashMap<String, List<Field>>(200);
     private final static Map<String, EClassRef> CLASS_REF_CACHE = new ConcurrentHashMap<String, EClassRef>(200);
 
     /**
      * 获得实体类的所有属性（该方法递归的获取当前类及父类中声明的字段。最终结果以list形式返回）
      */
-    public static Set<Field> getFields(Class<?> clazz) {
-        Set<Field> fields = FIELD_CACHE.get(clazz.getName());
+    public static List<Field> getFields(Class<?> clazz) {
+        List<Field> fields = FIELD_CACHE.get(clazz.getName());
         if (null != fields) {
             return fields;
         }
-        fields = new HashSet<>();
+        fields = new ArrayList<Field>();
         Field[] classFields = clazz.getDeclaredFields();
         for (Field field : classFields) {
             int mod = field.getModifiers();
@@ -41,7 +41,7 @@ public class EReflectUtils {
 
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != Object.class) {
-            Set<Field> superClassFields = getFields(superclass);
+            List<Field> superClassFields = getFields(superclass);
             fields.addAll(superClassFields);
         }
         FIELD_CACHE.put(clazz.getName(), fields);
@@ -65,7 +65,7 @@ public class EReflectUtils {
     }
 
     public static Field getField(Class<?> clazz, String fieldName) {
-        Set<Field> fields = getFields(clazz);
+        List<Field> fields = getFields(clazz);
         for (Field field : fields) {
             if (fieldName.equals(field.getName())) {
                 return field;
@@ -95,7 +95,7 @@ public class EReflectUtils {
      */
     public static void setValue(Object object, String fieldName, Object value) {
 
-        Set<Field> fields = EReflectUtils.getFields(object.getClass());
+        List<Field> fields = EReflectUtils.getFields(object.getClass());
         for (Field field : fields) {
             if (fieldName.equals(field.getName())) {
                 EReflectUtils.setFieldValue(field, object, value);
@@ -118,7 +118,7 @@ public class EReflectUtils {
         try {
             Object obj = clazz.newInstance();
 
-            Set<Field> fields = getFields(obj.getClass());
+            List<Field> fields = getFields(obj.getClass());
             for (Field field : fields) {
                 field.setAccessible(true);
                 field.set(obj, map.get(field.getName()));
@@ -146,7 +146,7 @@ public class EReflectUtils {
         try {
             Map<String, Object> map = new HashMap<String, Object>();
 
-            Set<Field> fields = getFields(obj.getClass());
+            List<Field> fields = getFields(obj.getClass());
             for (Field field : fields) {
                 field.setAccessible(true);
                 map.put(field.getName(), field.get(obj));
@@ -165,7 +165,7 @@ public class EReflectUtils {
      * @return
      */
     public static boolean isSingleClass(Class<?> clazz) {
-        return clazz.isPrimitive() || Number.class.isAssignableFrom(clazz) || CharSequence.class.isAssignableFrom(clazz)
+        return Boolean.class == clazz || clazz.isPrimitive() || Number.class.isAssignableFrom(clazz) || CharSequence.class.isAssignableFrom(clazz)
                 || Date.class.isAssignableFrom(clazz) || Blob.class.isAssignableFrom(clazz) || Clob.class.isAssignableFrom(clazz);
     }
 
@@ -181,6 +181,21 @@ public class EReflectUtils {
             return clazz.newInstance();
         } catch (Exception e) {
             throw new RuntimeException("Can't create instance（" + clazz.getName() + "）  by reflect!", e);
+        }
+    }
+
+    /**
+     * 根据实体类创建实体对象
+     */
+    public static Object constructorInstance(String className) {
+        if (className == null) {
+            throw new IllegalArgumentException("Object class mustn't be null");
+        }
+
+        try {
+            return constructorInstance(Class.forName(className));
+        } catch (Exception e) {
+            throw new RuntimeException("Can't create instance（" + className + "）  by reflect!", e);
         }
     }
 
@@ -255,7 +270,7 @@ public class EReflectUtils {
         ref = new EClassRef();
         CLASS_REF_CACHE.put(className, ref);
 
-        Set<Field> fields = EReflectUtils.getFields(clazz);
+        List<Field> fields = EReflectUtils.getFields(clazz);
         for (Field field : fields) {
             String fieldName = convertName(field.getName());
             if (!EReflectUtils.isSingleClass(field.getType())) {
@@ -270,7 +285,7 @@ public class EReflectUtils {
                 }
                 ref.getTableMap().put(fieldName, subClassRef);
                 //
-                Set<Field> field2s = EReflectUtils.getFields(clazz2);
+                List<Field> field2s = EReflectUtils.getFields(clazz2);
                 for (Field field2 : field2s) {
                     String fieldName2 = convertName(field2.getName());
                     subClassRef.getColumnMap().put(fieldName2, field2);
