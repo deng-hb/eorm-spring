@@ -6,13 +6,12 @@ import com.denghb.eorm.EOrmException;
 import com.denghb.eorm.support.EKeyHolder;
 import com.denghb.eorm.support.ETraceHolder;
 import com.denghb.eorm.support.domain.EClassRef;
+import com.denghb.eorm.support.domain.ESQLParameter;
 import com.denghb.eorm.support.domain.ETrace;
 import com.denghb.eorm.utils.EReflectUtils;
 import com.denghb.eorm.utils.ESQLTemplateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 
@@ -57,7 +56,6 @@ public class CoreImpl implements Core {
 
         ETraceHolder.start();
         ETrace trace = ETraceHolder.get();
-        sql = ESQLTemplateUtils.format(sql);
         String tid = trace.getId();
 
         Log log = LogFactory.getLog(trace.getLogName());
@@ -65,19 +63,18 @@ public class CoreImpl implements Core {
         if (logDebug) {
             log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
         }
+
+        ESQLParameter sp = ESQLTemplateUtils.parse(sql, args);
+        sql = sp.getSql();
+        args = sp.getArgs();
+
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
             conn = DataSourceUtils.getConnection(getDataSource());
 
-            EKeyHolder keyHolder = null;
-            for (Object object : args) {
-                if (object instanceof EKeyHolder) {
-                    keyHolder = (EKeyHolder) object;
-                    break;
-                }
-            }
+            EKeyHolder keyHolder = sp.getKeyHolder();
 
             if (null != keyHolder) {
                 ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -93,6 +90,9 @@ public class CoreImpl implements Core {
                     continue;
                 }
                 ps.setObject(i, object);
+                if (i > 1) {
+                    argsLog.append(", ");
+                }
                 argsLog.append(object);
                 i++;
             }
@@ -141,7 +141,9 @@ public class CoreImpl implements Core {
         if (logDebug) {
             log.debug(MessageFormat.format("{0} -> ({1})", trace.getLogMethod(), tid));
         }
-        sql = ESQLTemplateUtils.format(sql);
+        ESQLParameter sp = ESQLTemplateUtils.parse(sql, args);
+        sql = sp.getSql();
+        args = sp.getArgs();
 
         Connection conn = null;
         PreparedStatement ps = null;
@@ -155,6 +157,9 @@ public class CoreImpl implements Core {
             StringBuilder argsLog = new StringBuilder();
             for (Object object : args) {
                 ps.setObject(i, object);
+                if (i > 1) {
+                    argsLog.append(", ");
+                }
                 argsLog.append(object);
                 i++;
             }
@@ -186,10 +191,6 @@ public class CoreImpl implements Core {
         }
     }
 
-    protected ConversionService getConversionService() {
-        return DefaultConversionService.getSharedInstance();
-    }
-
     protected List<Map<String, Object>> toList(ResultSet rs) throws Exception {
         ResultSetMetaData md = rs.getMetaData();
         int columnCount = md.getColumnCount();
@@ -218,12 +219,11 @@ public class CoreImpl implements Core {
     protected <T> List<T> toList(ResultSet rs, Class<T> clazz) throws Exception {
         ResultSetMetaData md = rs.getMetaData();
         int columnCount = md.getColumnCount();
-        ConversionService service = getConversionService();
 
         List<T> list = new ArrayList<T>();
         if (EReflectUtils.isSingleClass(clazz)) {
             while (rs.next()) {
-                list.add(service.convert(rs.getObject(1), clazz));
+                list.add(EReflectUtils.convert(rs.getObject(1), clazz));
             }
         } else {
 
@@ -250,7 +250,7 @@ public class CoreImpl implements Core {
                             String columnName2 = EReflectUtils.convertName(md.getColumnName(j));
                             Field field2 = subClassRef.getColumnMap().get(columnName2);
                             if (null != field2) {
-                                EReflectUtils.setFieldValue(field2, object2, service.convert(rs.getObject(j), field2.getType()));
+                                EReflectUtils.setFieldValue(field2, object2, rs.getObject(j));
                             }
                         }
 
@@ -258,7 +258,7 @@ public class CoreImpl implements Core {
                         String columnName = EReflectUtils.convertName(md.getColumnName(i));
                         Field field = classRef.getColumnMap().get(columnName);
                         if (null != field) {
-                            EReflectUtils.setFieldValue(field, result, service.convert(rs.getObject(i), field.getType()));
+                            EReflectUtils.setFieldValue(field, result, rs.getObject(i));
                         }
                     }
 

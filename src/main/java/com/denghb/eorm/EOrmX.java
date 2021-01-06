@@ -1,6 +1,6 @@
 package com.denghb.eorm;
 
-import com.denghb.eorm.support.ESQLSegment;
+import com.denghb.eorm.support.ESQLWhere;
 
 import java.util.List;
 
@@ -12,11 +12,11 @@ import java.util.List;
  */
 public interface EOrmX extends EOrm {
 
-    <T> int update(T t, ESQLSegment<T> segment);
+    <T> int update(T t, ESQLWhere<T> segment);
 
-    <T> int delete(T t, ESQLSegment<T> segment);
+    <T> int delete(ESQLWhere<T> segment);
 
-    <T> List<T> select(ESQLSegment<T> segment);
+    <T> List<T> select(ESQLWhere<T> segment);
 
-    <T> T selectOne(ESQLSegment<T> segment);
+    <T> T selectOne(ESQLWhere<T> segment);
 }

@@ -14,7 +14,7 @@ public class ESQLParameter {
 
     private String sql;
 
-    private Object[] args;
+    private Object[] args = new Object[0];
 
     private EKeyHolder keyHolder;
 }

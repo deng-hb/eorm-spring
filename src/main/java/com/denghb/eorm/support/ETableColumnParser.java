@@ -10,6 +10,7 @@ import com.denghb.eorm.utils.EReflectUtils;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -74,7 +75,7 @@ public class ETableColumnParser {
         }
 
         // 主键
-        StringBuilder wherePrimaryKeyColumns = new StringBuilder(" where ");
+        StringBuilder wherePrimaryKeyColumns = new StringBuilder("where ");
         boolean append2 = false;
         List<EColumnRef> primaryKeys = tableRef.getPrimaryKeyColumns();
         for (EColumnRef column : primaryKeys) {
@@ -89,26 +90,13 @@ public class ETableColumnParser {
         tableRef.setWherePrimaryKeyColumns(wherePrimaryKeyColumns.toString());
 
         // 查询语句
-        StringBuilder selectTable = new StringBuilder("select ");
-        selectTable.append(columns);
-        selectTable.append(" from ");
-        selectTable.append(tableName);
-        selectTable.append(" ");
-        tableRef.setSelectTable(selectTable.toString());
+        tableRef.setSelectTable(String.format(Locale.CHINA, "select %s from %s ", columns, tableName));
 
         // 更新语句
-        StringBuilder updateTable = new StringBuilder();
-        updateTable.append("update ");
-        updateTable.append(tableName);
-        updateTable.append(" set ");
-        tableRef.setUpdateTable(updateTable.toString());
+        tableRef.setUpdateTable(String.format(Locale.CHINA, "update %s set ", tableName));
 
         // 删除
-        StringBuilder deleteTable = new StringBuilder();
-        deleteTable.append("delete from ");
-        deleteTable.append(tableName);
-        deleteTable.append(" ");
-        tableRef.setDeleteTable(deleteTable.toString());
+        tableRef.setDeleteTable(String.format(Locale.CHINA, "delete from %s ", tableName));
 
         TABLE_REF_CACHE.put(clazz, tableRef);
         return tableRef;

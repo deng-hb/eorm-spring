@@ -9,6 +9,9 @@ import lombok.Data;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterUtils;
+import org.springframework.jdbc.core.namedparam.ParsedSql;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,21 +39,13 @@ public class ESQLTemplateUtils {
     private static final String HASH_END = "#end";
 
     /**
-     * 美化SQL
-     * 去掉多余的换行和空格及注释
-     * # 注释（#{空格}文字直到换行都算注释内容）
-     *
-     * @param sql 原SQL
-     * @return 美化后的SQL
-     */
-    public static String format(String sql) {
-        return format(sql, null);
-    }
-
-    /**
-     * 1.美化并去掉注释
-     * 2.拼接${name}
-     * 3.
+     * 1. 美化SQL、去掉注释
+     * 2. 处理拼接SQL
+     * select * ${name} -> select * from table_name
+     * 3. 处理#if..等判断
+     * #if (#name == null) and name = ? #end -> and name = ?
+     * 4. 处理:name参数占位符
+     * where id in (:ids) and name = :name -> where id in (?, ?) and name = ?
      *
      * @param sql
      * @param args
@@ -59,10 +54,12 @@ public class ESQLTemplateUtils {
     public static ESQLParameter parse(String sql, Object... args) {
         ESQLParameter sp = new ESQLParameter();
 
+        // 参数列表
         List<Object> list = new ArrayList<>();
         for (Object arg : args) {
+            // 排除获取主键的
             if (arg instanceof EKeyHolder) {
-
+                sp.setKeyHolder((EKeyHolder) arg);
                 continue;
             }
             list.add(arg);
@@ -71,11 +68,34 @@ public class ESQLTemplateUtils {
         if (list.size() == 1) {
             Object object = list.get(0);
             if (!EReflectUtils.isSingleClass(object.getClass())) {
+                Map<String, Object> params = EReflectUtils.objectToMap(object);
+                sql = format(sql, params);
+                sql = parse(sql, params);
 
+                Object[] args2 = NamedParameterUtils.buildValueArray(sql, params);
+                List<Object> list2 = new ArrayList<>();
+                for (Object o : args2) {
+                    if (o instanceof List) {
+                        List<Object> list3 = (List<Object>) o;
+                        list2.addAll(list3);
+                    } else {
+                        list2.add(o);
+                    }
+                }
+
+                sp.setArgs(list2.toArray());
+
+                MapSqlParameterSource paramSource = new MapSqlParameterSource(params);
+                ParsedSql psql = NamedParameterUtils.parseSqlStatement(sql);
+                sql = NamedParameterUtils.substituteNamedParameters(psql, paramSource);
+                sp.setSql(sql);
+                return sp;
             }
         }
-        // sql = format(sql, );
+        sql = format(sql, null);
 
+        sp.setSql(sql);
+        sp.setArgs(list.toArray());
 
         return sp;
     }
@@ -154,7 +174,7 @@ public class ESQLTemplateUtils {
      * @param params 参数
      * @return 分析后的SQL
      */
-    public static String parse(String sql, Map<String, Object> params) {
+    private static String parse(String sql, Map<String, Object> params) {
 
         if (-1 == sql.indexOf(HASH) && -1 == sql.indexOf($)) {
             return sql;
@@ -336,7 +356,7 @@ public class ESQLTemplateUtils {
      * @param i       索引
      * @return 结果
      */
-    public static boolean hasNextKeyword(String sql, String keyword, int i) {
+    private static boolean hasNextKeyword(String sql, String keyword, int i) {
         if (null == keyword || null == sql) {
             return false;
         }

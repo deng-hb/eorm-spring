@@ -5,7 +5,7 @@ import com.denghb.eorm.Core;
 import com.denghb.eorm.EOrm;
 import com.denghb.eorm.EOrmX;
 import com.denghb.eorm.support.EKeyHolder;
-import com.denghb.eorm.support.ESQLSegment;
+import com.denghb.eorm.support.ESQLWhere;
 import com.denghb.xxlibrary.domain.Student;
 import com.denghb.xxlibrary.domain.TbTest1;
 import com.denghb.xxlibrary.model.ReadRecordModel;
@@ -24,21 +24,23 @@ import java.util.List;
 public class CoreTest {
 
     public static void main(String[] args) {
-
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
         ClassPathXmlApplicationContext ctx2 = new ClassPathXmlApplicationContext("classpath:spring.xml");
 
         EOrm eorm = ctx2.getBean(EOrm.class);
         EOrmX db = ctx2.getBean(EOrmX.class);
 
+
         Core core = ctx2.getBean(Core.class);
 
         List<Student> students1 = core.select(Student.class, "select * from student limit 1");
+        List<Student> students2 = core.select(Student.class, "select * from student limit 100,200");
+        List<Student> students3 = core.select(Student.class, "select * from student limit 40000,200");
 
         core.execute("insert into tb_test1(id2) values (2),(3)", new EKeyHolder());
 
 
-        List<Student> students = db.select(new ESQLSegment<Student>().eq(Student::setAge, 40));
+        List<Student> students = db.select(new ESQLWhere<Student>().eq(Student::setAge, 40));
 
         TbTest1 test = new TbTest1();
         test.setId2(123232);

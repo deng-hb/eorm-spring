@@ -3,12 +3,17 @@ package com.denghb.eorm.utils;
 
 import com.denghb.eorm.annotation.ETable;
 import com.denghb.eorm.support.domain.EClassRef;
+import org.springframework.core.convert.support.DefaultConversionService;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.Blob;
 import java.sql.Clob;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -80,7 +85,7 @@ public class EReflectUtils {
     public static void setFieldValue(Field field, Object object, Object value) {
         try {
             field.setAccessible(true);
-            field.set(object, value);
+            field.set(object, convert(value, field.getType()));
         } catch (Exception e) {
             throw new RuntimeException("Can't set value（" + value + "）to instance " + object.getClass().getName() + "." + field.getName(), e);
         }
@@ -305,5 +310,12 @@ public class EReflectUtils {
      */
     public static String convertName(String name) {
         return name.toLowerCase().replaceAll("_", "");
+    }
+
+    /**
+     * 类型转换
+     */
+    public static <T> T convert(Object source, Class<T> targetType) {
+        return DefaultConversionService.getSharedInstance().convert(source, targetType);
     }
 }

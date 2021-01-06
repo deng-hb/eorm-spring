@@ -13,6 +13,7 @@ import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 基本实现
@@ -108,8 +109,7 @@ public class EOrmImpl extends CoreImpl implements EOrm {
             List<Object> keys = keyHolder.getKeys();
             if (null != keys && !keys.isEmpty()) {
                 Object object = keys.get(0);
-
-                EReflectUtils.setFieldValue(primaryKeyFiled, domain, getConversionService().convert(object, primaryKeyFiled.getType()));
+                EReflectUtils.setFieldValue(primaryKeyFiled, domain, object);
             }
         }
     }
@@ -135,20 +135,14 @@ public class EOrmImpl extends CoreImpl implements EOrm {
             values.add(value);
         }
 
-
-        StringBuilder sb = new StringBuilder("update ");
-        sb.append(table.getName());
-        sb.append(" set ");
-        sb.append(ssb);
-        sb.append(table.getWherePrimaryKeyColumns());
-
         List<EColumnRef> pkColumns = table.getPrimaryKeyColumns();
         for (EColumnRef column : pkColumns) {
             Object value = EReflectUtils.getFieldValue(column.getField(), domain);
             values.add(value);
         }
 
-        String sql = sb.toString();
+        String sql = String.format(Locale.CHINA, "update %s set %s %s", table.getName(), ssb,
+                table.getWherePrimaryKeyColumns());
 
         Object[] args = values.toArray();
         int res = this.execute(sql, args);
@@ -178,7 +172,7 @@ public class EOrmImpl extends CoreImpl implements EOrm {
         ETraceHolder.start();
         ETableRef table = ETableColumnParser.getTableRef(clazz);
 
-        String sql = String.format("delete from %s %s", table.getName(),
+        String sql = String.format("%s %s", table.getDeleteTable(),
                 table.getWherePrimaryKeyColumns());
         int res = this.execute(sql, ids);
 
@@ -203,8 +197,7 @@ public class EOrmImpl extends CoreImpl implements EOrm {
         // 表名
         ETableRef table = ETableColumnParser.getTableRef(clazz);
 
-        String sql = String.format("select %s from %s %s", table.getColumns(),
-                table.getName(), table.getWherePrimaryKeyColumns());
+        String sql = String.format("%s %s", table.getSelectTable(), table.getWherePrimaryKeyColumns());
         return selectOne(clazz, sql, ids);
     }
 

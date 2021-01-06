@@ -18,25 +18,37 @@ import java.util.List;
  * @author denghongbing
  * @date 2020/12/25 17:25
  */
-public class ESQLSegment<T> {
+public class ESQLWhere<T> implements Serializable {
 
-    private StringBuilder sql = new StringBuilder();
+    private StringBuilder sql = new StringBuilder("where ");
 
     private List<Object> args = new ArrayList<Object>();
 
     private Class<T> type;
 
-    public ESQLSegment<T> bracketLeft() {
+    public ESQLWhere() {
+    }
+
+    /**
+     * " ( "
+     */
+    public ESQLWhere<T> bracketLeft() {
         sql.append(" ( ");
         return this;
     }
 
-    public ESQLSegment<T> bracketRight() {
+    /**
+     * " ) "
+     */
+    public ESQLWhere<T> bracketRight() {
         sql.append(" ) ");
         return this;
     }
 
-    public ESQLSegment<T> and() {
+    /**
+     * " and "
+     */
+    public ESQLWhere<T> and() {
         sql.append(" and ");
         return this;
     }
@@ -52,54 +64,69 @@ public class ESQLSegment<T> {
 
     }
 
-    public ESQLSegment<T> or() {
+    public ESQLWhere<T> or() {
         sql.append(" or ");
         return this;
     }
 
-    public <U> ESQLSegment<T> eq(EBiConsumer<T, U> func, U arg) {
+    public <U> ESQLWhere<T> eq(EBiConsumer<T, U> func, U arg) {
         sql.append(getColumnName(func)).append(" = ?");
         args.add(arg);
         return this;
     }
 
-    public <U> ESQLSegment<T> gt(EBiConsumer<T, U> func, U arg) {
+    public <U> ESQLWhere<T> gt(EBiConsumer<T, U> func, U arg) {
         sql.append(getColumnName(func)).append(" > ?");
         args.add(arg);
         return this;
     }
 
-    public <U> ESQLSegment<T> gte(EBiConsumer<T, U> func, U arg) {
+    public <U> ESQLWhere<T> gte(EBiConsumer<T, U> func, U arg) {
         sql.append(getColumnName(func)).append(" >= ?");
         args.add(arg);
         return this;
     }
 
-    public <U> ESQLSegment<T> betweenAnd(EBiConsumer<T, U> func, U arg, U arg2) {
+    public <U> ESQLWhere<T> betweenAnd(EBiConsumer<T, U> func, U arg, U arg2) {
         sql.append(getColumnName(func)).append(" between ? and ?");
         args.add(arg);
         args.add(arg2);
         return this;
     }
 
-    public <U> ESQLSegment<T> lt(EBiConsumer<T, U> func, U arg) {
+    public <U> ESQLWhere<T> lt(EBiConsumer<T, U> func, U arg) {
         sql.append(getColumnName(func)).append(" < ?");
         args.add(arg);
         return this;
     }
 
 
-    public <U> ESQLSegment<T> lte(EBiConsumer<T, U> func, U arg) {
+    public <U> ESQLWhere<T> lte(EBiConsumer<T, U> func, U arg) {
         sql.append(getColumnName(func)).append(" <= ?");
         args.add(arg);
         return this;
     }
 
-    public <U> ESQLSegment<T> in(EBiConsumer<T, U> func, List<U> list) {
+
+    public <U> ESQLWhere<T> like(EBiConsumer<T, U> func, U arg) {
+        sql.append(getColumnName(func)).append(" like ?");
+        args.add(arg);
+        return this;
+    }
+
+    public <U> ESQLWhere<T> in(EBiConsumer<T, U> func, List<U> list) {
         sql.append(getColumnName(func)).append(" in ");
+        appendListArgs(list);
+        return this;
+    }
+
+    private <U> void appendListArgs(List<U> list) {
         boolean append = false;
         sql.append("(");
         for (Object a : list) {
+            if (null == a) {
+                continue;// fix "column in (null)" error
+            }
             if (append) {
                 sql.append(", ");
             }
@@ -108,27 +135,30 @@ public class ESQLSegment<T> {
             append = true;
         }
         sql.append(")");
-        return this;
     }
 
-    public <U> ESQLSegment<T> notIn(EBiConsumer<T, U> func, List<U> list) {
+    public <U> ESQLWhere<T> notIn(EBiConsumer<T, U> func, List<U> list) {
         sql.append(getColumnName(func)).append(" not in ");
-        boolean append = false;
-        sql.append("(");
-        for (Object a : list) {
-            if (append) {
-                sql.append(", ");
-            }
-            sql.append("?");
-            args.add(a);
-            append = true;
-        }
-        sql.append(")");
+        appendListArgs(list);
         return this;
     }
 
-    public String whereSQL() {
-        return "where " + sql;
+    public <U> ESQLWhere<T> isNotNull(EBiConsumer<T, U> func) {
+        sql.append(getColumnName(func)).append(" is not null ");
+        return this;
+    }
+
+    public <U> ESQLWhere<T> isNull(EBiConsumer<T, U> func) {
+        sql.append(getColumnName(func)).append(" is null ");
+        return this;
+    }
+
+    public String sql() {
+        return sql.toString();
+    }
+
+    public StringBuilder getSql() {
+        return sql;
     }
 
     public List<Object> getArgs() {

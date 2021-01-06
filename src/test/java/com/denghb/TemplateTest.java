@@ -24,8 +24,7 @@ public class TemplateTest {
         String res = ESQLTemplateUtils.format(sql, params);
         System.out.println(res);
 
-        String res2 = ESQLTemplateUtils.parse(res, params);
-        System.out.println(res2);
+        ESQLTemplateUtils.parse(res, params);
     }
 
 }
