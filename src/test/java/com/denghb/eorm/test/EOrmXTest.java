@@ -37,6 +37,10 @@ public class EOrmXTest {
 
         List<Student> list = db.select(new ESQLWhere<Student>().eq(Student::setId, id));
 
+        List<Student> list2 = db.select(new ESQLWhere<Student>().between(Student::setId, id, 2));
+
+        List<Student> list3 = db.select(new ESQLWhere<Student>().gte(Student::setId, id));
+
         Student student1 = db.selectById(Student.class, id);
 
         Student student2 = db.selectOne(new ESQLWhere<Student>().eq(Student::setId, id));

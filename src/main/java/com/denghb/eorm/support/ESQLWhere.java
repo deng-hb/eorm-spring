@@ -11,6 +11,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * FIXME 简单介绍该类
@@ -19,6 +21,9 @@ import java.util.List;
  * @date 2020/12/25 17:25
  */
 public class ESQLWhere<T> implements Serializable {
+    // 缓存
+    private final static Map<String, String> COLUMN_CACHE = new ConcurrentHashMap<String, String>(500);
+    private final static Map<String, Class<?>> TYPE_CACHE = new ConcurrentHashMap<String, Class<?>>(200);
 
     private StringBuilder sql = new StringBuilder("where ");
 
@@ -54,14 +59,12 @@ public class ESQLWhere<T> implements Serializable {
     }
 
     private void setDefaultAnd() {
-        if (sql.length() > 0) {
-            String last = sql.substring(sql.length() - 1, sql.length());
-            // " = ?" or "in (?, ?)"
-            if (last.equals("?") || last.equals(")")) {
-                and();
-            }
+        // " = ?" or "in (?, ?)" or " null"
+        int last1 = sql.length() - 1;
+        if (sql.lastIndexOf("?") == last1 || sql.lastIndexOf(")") == last1
+                || sql.lastIndexOf(" null") == sql.length() - 5) {
+            and();
         }
-
     }
 
     public ESQLWhere<T> or() {
@@ -71,6 +74,12 @@ public class ESQLWhere<T> implements Serializable {
 
     public <U> ESQLWhere<T> eq(EBiConsumer<T, U> func, U arg) {
         sql.append(getColumnName(func)).append(" = ?");
+        args.add(arg);
+        return this;
+    }
+
+    public <U> ESQLWhere<T> neq(EBiConsumer<T, U> func, U arg) {
+        sql.append(getColumnName(func)).append(" != ?");
         args.add(arg);
         return this;
     }
@@ -87,7 +96,7 @@ public class ESQLWhere<T> implements Serializable {
         return this;
     }
 
-    public <U> ESQLWhere<T> betweenAnd(EBiConsumer<T, U> func, U arg, U arg2) {
+    public <U> ESQLWhere<T> between(EBiConsumer<T, U> func, U arg, U arg2) {
         sql.append(getColumnName(func)).append(" between ? and ?");
         args.add(arg);
         args.add(arg2);
@@ -144,12 +153,12 @@ public class ESQLWhere<T> implements Serializable {
     }
 
     public <U> ESQLWhere<T> isNotNull(EBiConsumer<T, U> func) {
-        sql.append(getColumnName(func)).append(" is not null ");
+        sql.append(getColumnName(func)).append(" is not null");
         return this;
     }
 
     public <U> ESQLWhere<T> isNull(EBiConsumer<T, U> func) {
-        sql.append(getColumnName(func)).append(" is null ");
+        sql.append(getColumnName(func)).append(" is null");
         return this;
     }
 
@@ -182,9 +191,19 @@ public class ESQLWhere<T> implements Serializable {
             Method method = lambda.getClass().getDeclaredMethod("writeReplace");
             method.setAccessible(Boolean.TRUE);
             SerializedLambda serializedLambda = (SerializedLambda) method.invoke(lambda);
+
+            String objectClassName = serializedLambda.getImplClass().replaceAll("/", ".");
+            String key = objectClassName + "#" + serializedLambda.getImplMethodName();
+
+            type = (Class<T>) TYPE_CACHE.get(objectClassName);
+
+            String columnName = COLUMN_CACHE.get(key);
+            if (null != columnName) {
+                return columnName;
+            }
             if (null == type) {
-                String className = serializedLambda.getImplClass().replaceAll("/", ".");
-                type = (Class<T>) Class.forName(className);
+                type = (Class<T>) Class.forName(objectClassName);
+                TYPE_CACHE.put(objectClassName, type);
             }
 
             String methodName = serializedLambda.getImplMethodName();
@@ -198,7 +217,9 @@ public class ESQLWhere<T> implements Serializable {
                 throw new EOrmException("field [" + fieldName + "] not find @EColumn");
             }
 
-            return column.name();
+            columnName = column.name();
+            COLUMN_CACHE.put(key, columnName);
+            return columnName;
         } catch (Exception e) {
             throw new EOrmException(e.getMessage(), e);
         }
