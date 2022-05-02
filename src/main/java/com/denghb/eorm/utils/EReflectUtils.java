@@ -24,6 +24,7 @@ public class EReflectUtils {
 
     private final static Map<String, List<Field>> FIELD_CACHE = new ConcurrentHashMap<String, List<Field>>(200);
     private final static Map<String, EClassRef> CLASS_REF_CACHE = new ConcurrentHashMap<String, EClassRef>(200);
+    private final static Map<String, Object> STATIC_CACHE = new ConcurrentHashMap<String, Object>(200);
 
     /**
      * 获得实体类的所有属性（该方法递归的获取当前类及父类中声明的字段。最终结果以list形式返回）
@@ -51,6 +52,36 @@ public class EReflectUtils {
         }
         FIELD_CACHE.put(clazz.getName(), fields);
         return fields;
+    }
+
+    /**
+     * 获取静态属性值
+     *
+     * @param clazz
+     * @param fieldName
+     * @return
+     */
+    public static Object getStaticFieldValue(Class<?> clazz, String fieldName) {
+        String key = String.format("%s#%s", clazz.getName(), fieldName);
+        Object value = STATIC_CACHE.get(key);
+        if (null != value) {
+            return value;
+        }
+        Field[] fields = clazz.getFields();
+        for (Field field : fields) {
+            int modifiers = field.getModifiers();
+            if (Modifier.isStatic(modifiers) && field.getName().equals(fieldName)) {
+                try {
+                    field.setAccessible(true);
+                    value = field.get(null);
+
+                    STATIC_CACHE.put(key, value);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return value;
     }
 
     /**

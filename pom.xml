@@ -17,7 +17,7 @@
         <skipTests>true</skipTests>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <spring.version>5.1.8.RELEASE</spring.version>
+        <spring.version>5.3.19</spring.version>
     </properties>
 
     <licenses>
@@ -66,7 +66,7 @@
         <dependency>
             <groupId>com.denghb</groupId>
             <artifactId>multi-line</artifactId>
-            <version>1.0.2</version>
+            <version>1.0.3</version>
         </dependency>
 
         <dependency>
@@ -91,6 +91,32 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <version>${spring.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.9.9.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.9.9.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-annotations</artifactId>
             <version>1.5.20</version>
@@ -101,7 +127,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
 

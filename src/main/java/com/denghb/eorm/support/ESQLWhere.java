@@ -37,7 +37,7 @@ public class ESQLWhere<T> implements Serializable {
     /**
      * " ( "
      */
-    public ESQLWhere<T> bracketLeft() {
+    public ESQLWhere<T> start() {
         sql.append(" ( ");
         return this;
     }
@@ -45,7 +45,7 @@ public class ESQLWhere<T> implements Serializable {
     /**
      * " ) "
      */
-    public ESQLWhere<T> bracketRight() {
+    public ESQLWhere<T> end() {
         sql.append(" ) ");
         return this;
     }
@@ -159,6 +159,22 @@ public class ESQLWhere<T> implements Serializable {
 
     public <U> ESQLWhere<T> isNull(EBiConsumer<T, U> func) {
         sql.append(getColumnName(func)).append(" is null");
+        return this;
+    }
+
+    public ESQLWhere<T> exists(String existsSql) {
+        sql.append(" exists ");
+        sql.append("(");
+        sql.append(existsSql);
+        sql.append(")");
+        return this;
+    }
+
+    public ESQLWhere<T> notExists(String notExistsSql) {
+        sql.append(" not exists ");
+        sql.append("(");
+        sql.append(notExistsSql);
+        sql.append(")");
         return this;
     }
 

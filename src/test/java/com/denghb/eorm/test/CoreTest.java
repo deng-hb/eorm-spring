@@ -7,7 +7,6 @@ import com.denghb.eorm.EOrmX;
 import com.denghb.eorm.support.EKeyHolder;
 import com.denghb.eorm.support.ESQLWhere;
 import com.denghb.xxlibrary.domain.Student;
-import com.denghb.xxlibrary.domain.TbTest1;
 import com.denghb.xxlibrary.model.ReadRecordModel;
 import com.denghb.xxlibrary.model.TestSubSelectModel;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -42,9 +41,6 @@ public class CoreTest {
 
         List<Student> students = db.select(new ESQLWhere<Student>().eq(Student::setAge, 40));
 
-        TbTest1 test = new TbTest1();
-        test.setId2(123232);
-        eorm.insert(test);
 
         String tsql = ""/*{
             select s.*, s1.* from student s inner join (

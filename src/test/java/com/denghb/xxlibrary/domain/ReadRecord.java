@@ -34,7 +34,7 @@ public class ReadRecord implements java.io.Serializable {
 
     /** 逻辑删除 */
     @EColumn(name = "deleted")
-    private Boolean deleted;
+    private Integer deleted;
 
     /** 版本号 */
     @EColumn(name = "version")

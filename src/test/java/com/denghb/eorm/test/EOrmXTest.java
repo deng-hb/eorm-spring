@@ -46,8 +46,8 @@ public class EOrmXTest {
         Student student2 = db.selectOne(new ESQLWhere<Student>().eq(Student::setId, id));
 
         student.setAge(100);
-        db.update(student, new ESQLWhere<Student>().in(Student::setId, Arrays.asList(id)));
-        db.delete(new ESQLWhere<Student>().eq(Student::setId, id));
+        int update = db.update(student, new ESQLWhere<Student>().in(Student::setId, Arrays.asList(id)));
+        int delete = db.delete(new ESQLWhere<Student>().eq(Student::setId, id));
 
     }
 }

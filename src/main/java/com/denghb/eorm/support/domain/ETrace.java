@@ -11,7 +11,7 @@ public class ETrace {
 
     private String id;
 
-    private long startTime;
+    private Long startTime;
 
     private String logName;
 

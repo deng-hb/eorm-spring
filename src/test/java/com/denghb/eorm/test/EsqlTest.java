@@ -13,7 +13,7 @@ import java.util.Arrays;
  * @author denghongbing
  * @date 2021/01/08 22:28
  */
-public class ESQLWhereTest {
+public class EsqlTest {
 
     @Test
     public void test1() {
@@ -31,7 +31,7 @@ public class ESQLWhereTest {
 
     @Test
     public void test3() {
-        String sql = new ESQLWhere<Student>().notIn(Student::setId, Arrays.asList(1, 3)).eq(Student::setDeleted, false).sql();
+        String sql = new ESQLWhere<Student>().notIn(Student::setId, Arrays.asList(1, 3)).eq(Student::setDeleted, 0).sql();
         System.out.println(sql);
         Assert.assertEquals(sql, "where id not in (?, ?) and deleted = ?");
     }

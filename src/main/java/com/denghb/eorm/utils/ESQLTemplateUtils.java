@@ -56,13 +56,15 @@ public class ESQLTemplateUtils {
 
         // 参数列表
         List<Object> list = new ArrayList<>();
-        for (Object arg : args) {
-            // 排除获取主键的
-            if (arg instanceof EKeyHolder) {
-                sp.setKeyHolder((EKeyHolder) arg);
-                continue;
+        if (null != args) {
+            for (Object arg : args) {
+                // 排除获取主键的
+                if (arg instanceof EKeyHolder) {
+                    sp.setKeyHolder((EKeyHolder) arg);
+                    continue;
+                }
+                list.add(arg);
             }
-            list.add(arg);
         }
 
         if (list.size() == 1) {
